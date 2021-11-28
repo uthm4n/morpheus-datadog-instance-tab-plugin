@@ -12,9 +12,11 @@ In this example, you'll create a custom instance UI tab that fetches instance re
 
 # Planning the Custom Instance UI Tab Plugin
 
+Before writing any code you should plan out the functionality of your plugin.
+
 ## Understanding the REST API
 
-https://docs.datadoghq.com/api/latest/
+[DataDog REST API documentation](https://docs.datadoghq.com/api/latest/)
 
 ### Authentication
 
@@ -23,7 +25,9 @@ The DataDog REST API requires an API key as well as an Application key since we'
 https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
 
 ## Storing sensitive data
+
 Morpheus Cypher provides a native secure storage feature
+
 In this case it makes sense to store the DataDog API and Application keys in Cypher.
 
 
@@ -33,7 +37,7 @@ With the authentication
 
 # Developing the plugin
 
-Now that we've planned out plugin, we're ready to begin developing the plugin. The first thing we'll do is create a new directory to house the project. You’ll ultimately end up with a file structure typical of Java or Groovy projects, looking something like this:
+Now that we've planned out the plugin, we're ready to begin developing the plugin. The first thing we'll do is create a new directory to house the project. You’ll ultimately end up with a file structure typical of Java or Groovy projects, looking something like this:
 
 ```
 ./
@@ -51,7 +55,6 @@ Configure the .gitignore file to ignore the build/ directory which will appear a
 
 ## Store the credentials in Morpheus Cypher
 
-
 ```
 def account = new Account(id: 1)
 def cypherAccess = new CypherAccess(account)
@@ -59,6 +62,7 @@ def cypherAccess = new CypherAccess(account)
 
 **Retrieve the API key**
 
+The API Key used to authenticate to the DataDog API is stored in Morpheus Cypher so the plugin needs to retrieve the API key before making an API call to fetch the instance data. The plugin expects the cypher secret to be named `dd-api-key` in order to retrieve the value from cypher.
 
 ```
 def intApiKey = morpheus.getCypher().read(cypherAccess, "secret/dd-api-key")
@@ -73,8 +77,9 @@ intApiKey.subscribe(
 )
 ```
 
-
 **Retrieve the Application key**
+
+The Application key used to authenticate to the DataDog API is stored in Morpheus Cypher so the plugin needs to retrieve the Application key before making an API call to fetch the instance data. The plugin expects the cypher secret to be named `dd-application-key` in order to retrieve the value from cypher.
 
 ```
 def intAppKey = morpheus.getCypher().read(cypherAccess, "secret/dd-application-key")
@@ -88,8 +93,6 @@ intAppKey.subscribe(
     }
 )
 ```
-
-
 
 ## Query the DataDog API
 
@@ -113,7 +116,7 @@ With the code written, use gradle to build the JAR which we can upload to Morphe
 cd path/to/your/directory
 ```
 
-Build your new plugin.
+Run gradle to build a new version of the plugin.
 
 ```
 gradle shadowJar
@@ -121,7 +124,10 @@ gradle shadowJar
 
 Once the build process has completed, locate the JAR in the build/libs directory
 
-# Upload the Custom Instance Tab Plugin to Morpheus UI
-Custom plugins are added to Morpheus through the Plugins tab in the Integrations section (Administration > Integrations > Plugins). Navigate to this section and click CHOOSE FILE. Browse for your JAR file and upload it to Morpheus. The new plugin will be added next to any other custom plugins that may have been developed for your appliance.
+# Install and Configure  the Custom Plugin
+Custom plugins are added to Morpheus through the Plugins tab in the Integrations section.
 
-## Configuring the 
+1. Navigate to Administration > Integrations > Plugins and click CHOOSE FILE. 
+2. Browse for your JAR file and upload it to Morpheus. 
+3. The new plugin will be added next to any other custom plugins that may have been developed for your appliance.
+
