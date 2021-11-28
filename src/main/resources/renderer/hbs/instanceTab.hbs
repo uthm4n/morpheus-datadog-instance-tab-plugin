@@ -1,0 +1,79 @@
+<div>
+<h2>Overview</h2>
+<div class="incident-stats">
+	<div class="type-logo">
+			<img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/7e/Datadog_logo.svg/1200px-Datadog_logo.svg.png" alt="MongoDB" class="logo missing-logo" onerror="loadImage(this);" onload="sizeImage(this)" style="max-height: 80px; max-width: 140px;">
+	</div>
+	<div class="stats-container big-stat-block">
+		<span class="stat-content">{{name}}</span>
+		<span class="stat-label">Name</span>
+	</div>
+	<div class="stats-container big-stat-block">
+		{{#if status}}
+		<div title="Healthy" class="status-icon icon-health status-icon-center  status-healthy  "></div>
+		<div class="stat-label">
+			<a href="/monitoring/groups/47">Status</a>
+		</div>
+		{{else}}
+		<span class="stat-content">{{status}}</span>
+		<span class="stat-label">Status</span>
+		{{/if}}
+	</div>
+	<div class="stats-container big-stat-block">
+		<span class="stat-content">{{muteStatus}}</span>
+		<span class="stat-label">Mute Status</span>
+	</div>
+	<div class="stats-container big-stat-block">
+		<span class="stat-content">{{checks}}</span>
+		<span class="stat-label"># of Checks</span>
+	</div>
+	<div class="stats-container big-stat-block">
+		<span class="stat-content">{{agentVersion}}</span>
+		<span class="stat-label">Agent Version</span>
+	</div>
+</div>
+<div class="header-meta-info">
+	<p>Apps</p>
+	<div class="item">
+	{{#each apps}}
+		<span class="badge badge-primary badge-pill">{{this}}</span>
+	{{/each}}
+	</div>
+</div>
+<h2>Agent Checks</h2>
+<table>
+	<thead>
+	<th>Check</th>
+	<th>Status</th>
+	</thead>
+	<tbody>
+		{{#each agentChecks}}
+			<tr>
+				<td>{{this.0}}</td>
+				<td>{{this.3}}</td>
+			</tr>
+		{{/each}}
+	</tbody>
+</table>
+
+<style>
+.big-stat-block {
+  margin-top: 15px;
+  margin-bottom: 40px;
+}
+
+.resource-detail .type-logo .logo {
+	margin-top: 0px;
+}
+.instance .incident-stats .status-icon {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.instance .incident-stats {
+  margin-bottom: 22px;
+}
+</style>
+
+<script src="{{asset "/instance-tab.js"}}" ></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
