@@ -14,12 +14,9 @@ Custom plugin development requires some programming experience but this guide is
 
 [Developing the UI plugin](#developing-the-ui-plugin)
 
-[Building the UI plugin](#building-the-ui-plugin)
+[Build the UI plugin](#build-the-ui-plugin)
 
-[Installing and configuring the UI plugin](#installing-and-configuring-the-ui-plugin)
-
-
-[Lab #4: Installing Puppet Agents](./labs/04-installing-puppet-agents.md)
+[Install and configure the UI plugin](#install-and-configure-the-ui-plugin)
 
 
 **Requirements**
@@ -72,10 +69,10 @@ Morpheus Cypher provides a native secure storage feature
 In this case it makes sense to store the DataDog API and Application keys in Cypher.
 
 
-### API Calls
+## Making API calls
 
 
-# Developing the plugin
+# Developing the UI plugin
 
 Now that we've planned out the plugin, we're ready to begin developing the plugin. The first thing we'll do is create a new directory to house the project. You’ll ultimately end up with a file structure typical of Java or Groovy projects, looking something like this:
 
@@ -180,8 +177,8 @@ if(tabGroups.contains(instance.site.name)){
 
 
 
-# Build the JAR
-With the code written, use gradle to build the JAR which we can upload to Morpheus so the report can be viewed. To do so, change directory into the location of the directory created earlier to hold your custom plugin code.
+# Build the UI plugin
+With the code written, we'll use gradle to build the JAR which we'll upload to Morpheus to install the plugin. To do so, change directory into the location of the directory created earlier to hold your custom plugin code.
 
 ```
 cd path/to/your/directory
@@ -195,7 +192,7 @@ gradle shadowJar
 
 Once the build process has completed, locate the JAR in the build/libs directory
 
-# Install and Configure  the Custom Plugin
+# Install and configure the UI plugin
 Custom plugins are added to Morpheus through the Plugins tab in the Integrations section.
 
 1. Navigate to Administration > Integrations > Plugins and click CHOOSE FILE. 
