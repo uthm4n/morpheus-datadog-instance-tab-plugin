@@ -1,6 +1,25 @@
+# Morpheus DataDog UI Plugin
+
 The Morpheus plugin architecture is a library which allows users to extend functionality in several categories, including new Cloud providers, Task types, UI views, custom reports, and more. In this guide, we will take a look at developing a custom instance UI tab. Complete developer documentation including the full API documentation and links to Github repositories containing complete code examples are available in the [Developer Portal](https:/developer.morpheusdata.com).
 
-Custom plugin development requires some programming experience but this guide is designed to break down the required steps into a digestible process that users can quickly run with. Morpheus plugins are written in Java or Groovy, our example here will be written in Groovy. 
+Custom plugin development requires some programming experience but this guide is designed to break down the required steps into a digestible process that users can quickly run with. Morpheus plugins are written in Java or Groovy, our example here will be written in Groovy.
+
+[Planning the UI plugin](#planning-the-ui-plugin)
+
+* [Understanding the REST API](#understanding-the-rest-api)
+
+* [Storing sensitive data](#storing-sensitive-data)
+
+* [Making API calls](#making-api-calls)
+
+[Developing the UI plugin](#developing-the-ui-plugin)
+
+[Building the UI plugin](#building-the-ui-plugin)
+
+[Installing and configuring the UI plugin](#installing-and-configuring-the-ui-plugin)
+
+
+[Lab #4: Installing Puppet Agents](./labs/04-installing-puppet-agents.md)
 
 
 **Requirements**
@@ -11,10 +30,9 @@ Before we begin, we need to ensure that we've met the following requirements to 
 * Java 8 or 11 installed
 * A DataDog account (https://www.datadoghq.com/)
 
-# Planning the Custom Instance UI Tab Plugin
+# Planning the UI plugin
 
 In this example, we'll create a custom instance UI tab that fetches instance related data from the DataDog monitoring solution. Before writing any code we'll plan out the functionality of our plugin.
-
 
 **Overview Section**
 
