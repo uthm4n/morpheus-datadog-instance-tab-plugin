@@ -1,62 +1,210 @@
-<div>
-<h2>Overview</h2>
-<div class="incident-stats">
-	<div class="type-logo">
-			<img src="https://upload.wikimedia.org/wikipedia/en/thumb/7/7e/Datadog_logo.svg/1200px-Datadog_logo.svg.png" alt="MongoDB" class="logo missing-logo" onerror="loadImage(this);" onload="sizeImage(this)" style="max-height: 80px; max-width: 140px;">
-	</div>
-	<div class="stats-container big-stat-block">
-		<span class="stat-content">{{name}}</span>
-		<span class="stat-label">Name</span>
-	</div>
-	<div class="stats-container big-stat-block">
-		{{#if status}}
-		<div title="Healthy" class="status-icon icon-health status-icon-center  status-healthy  "></div>
-		<div class="stat-label">
-			<a href="/monitoring/groups/47">Status</a>
-		</div>
-		{{else}}
-		<span class="stat-content">{{status}}</span>
-		<span class="stat-label">Status</span>
-		{{/if}}
-	</div>
-	<div class="stats-container big-stat-block">
-		<span class="stat-content">{{muteStatus}}</span>
-		<span class="stat-label">Mute Status</span>
-	</div>
-	<div class="stats-container big-stat-block">
-		<span class="stat-content">{{checks}}</span>
-		<span class="stat-label"># of Checks</span>
-	</div>
-	<div class="stats-container big-stat-block">
-		<span class="stat-content">{{agentVersion}}</span>
-		<span class="stat-label">Agent Version</span>
-	</div>
+<ul class="view-type nav nav-pills nav-justified" >
+   <li role="presentation" class="active"><a href="#overview-tab" data-toggle="pill" role="tab">Overview</a></li>
+   <li role="presentation"><a href="#system-info-tab" data-toggle="pill" role="tab">System Info</a></li>
+</ul>
+<div class="tab-content">
+   <div id="overview-tab" role="tabpanel" class="tab-pane active">
+      <div class="row">
+         <div class="col-sm-6">
+            <h2>Overview</h2>
+         </div>
+         <div class="col-sm-6 text-right">
+            <div id="instance-actions" class="btn-group" style="margin-top: 15px;">
+               <button type="button" style="background-color: #632CA6" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               Actions <span class="caret"></span>
+               </button>
+               <ul class="dropdown-menu">
+                  <li>
+                     <a href="https://app.datadoghq.com/infrastructure?tags=host%3A{{name}}" target="_blank">Open Dashboard</a>
+                  </li>
+                  <li>
+                     <a href="/instances/workflowPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#workflow-instance-modal" class="instance-workflow-button" data-toggle="modal">Run Workflow</a>
+                  </li>
+                  <li>
+                     <a href="/instances/taskPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#task-instance-modal" class="instance-task-button" data-toggle="modal">Run Task</a>
+                  </li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      <hr>
+      <div class="incident-stats">
+         <div class="type-logo">
+            <img src="{{asset "/datadog-logo.png"}}" alt="DataDog Logo" class="logo" onerror="loadImage(this);" onload="sizeImage(this)" style="max-height: 80px; max-width: 140px;">
+         </div>
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{name}}</span>
+            <span class="stat-label">Name</span>
+         </div>
+         <div class="stats-container big-stat-block">
+            {{#if status}}
+            <div title="Healthy" class="status-icon icon-health status-icon-center  status-healthy  "></div>
+            <span class="stat-label">Status</span>
+            {{else}}
+            <span class="stat-content">{{status}}</span>
+            <span class="stat-label">Status</span>
+            {{/if}}
+         </div>
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{muteStatus}}</span>
+            <span class="stat-label">Mute Status</span>
+         </div>
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{checks}}</span>
+            <span class="stat-label"># of Checks</span>
+         </div>
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{agentVersion}}</span>
+            <span class="stat-label">Agent Version</span>
+         </div>
+      </div>
+      <div class="header-meta-info">
+         <p>Apps</p>
+         <div class="item">
+            {{#each apps}}
+            <span class="badge badge-primary badge-pill">{{this}}</span>
+            {{/each}}
+         </div>
+      </div>
+      <h2>Agent Checks</h2>
+      <table>
+         <thead>
+            <th>Check</th>
+            <th>Status</th>
+         </thead>
+         <tbody>
+            {{#each agentChecks}}
+            <tr>
+               <td>{{this.0}}</td>
+               <td>{{this.3}}</td>
+            </tr>
+            {{/each}}
+         </tbody>
+      </table>
+   </div>
+   <div id="system-info-tab" role="tabpanel" class="tab-pane">
+      <div class="row">
+         <div class="col-sm-6">
+            <h2>System Information</h2>
+         </div>
+         <div class="col-sm-6 text-right">
+            <div id="instance-actions" class="btn-group" style="margin-top: 15px;">
+               <button type="button" style="background-color: #632CA6" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+               Actions <span class="caret"></span>
+               </button>
+               <ul class="dropdown-menu">
+                  <li>
+                     <a href="https://app.datadoghq.com/infrastructure?tags=host%3A{{name}}" target="_blank">Open Dashboard</a>
+                  </li>
+                  <li>
+                     <a href="/instances/workflowPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#workflow-instance-modal" class="instance-workflow-button" data-toggle="modal">Run Workflow</a>
+                  </li>
+                  <li>
+                     <a href="/instances/taskPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#task-instance-modal" class="instance-task-button" data-toggle="modal">Run Task</a>
+                  </li>
+               </ul>
+            </div>
+         </div>
+      </div>
+      <hr>
+      <div class="incident-stats">
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{operatingSystem}}</span>
+            <span class="stat-label">Operating System</span>
+         </div>
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{cpuCores}}</span>
+            <span class="stat-label">CPU Cores</span>
+         </div>
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{logicalProcessors}}</span>
+            <span class="stat-label">Logical Processors</span>
+         </div>
+         <div class="stats-container big-stat-block">
+            <span class="stat-content">{{memory}}</span>
+            <span class="stat-label">Memory</span>
+         </div>
+      </div>
+      <div class="resource-detail zone-summary">
+         <div class="summary-collapsible-row">
+            <div collapsible="" class="detail-title summary-title-row collapsed">
+               <div class="name-block">
+                  <span class="name">Platform Details</span>
+               </div>
+            </div>
+            <div class="summary-content-row">
+               <div class="zone-summary-container">
+                  <table class="table table-middle">
+                     <thead></thead>
+                     <tbody>
+                        {{#each platformDetails}}
+                        <tr>
+                           <td>{{@key}}</td>
+                           <td>{{this}}</td>
+                        </tr>
+                        {{/each}}		
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div class="resource-detail zone-summary">
+         <div class="summary-collapsible-row">
+            <div collapsible="" class="detail-title summary-title-row collapsed">
+               <div class="name-block">
+                  <span class="name">CPU Details</span>
+               </div>
+            </div>
+            <div class="summary-content-row">
+               <div class="zone-summary-container">
+                  <table class="table table-middle">
+                     <thead></thead>
+                     <tbody>
+                        {{#each cpuDetails}}
+                        <tr>
+                           <td>{{@key}}</td>
+                           <td>{{this}}</td>
+                        </tr>
+                        {{/each}}	
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+      </div>
+      <div class="resource-detail zone-summary">
+         <div class="summary-collapsible-row">
+            <div collapsible="" class="detail-title summary-title-row collapsed">
+               <div class="name-block">
+                  <span class="name">Memory Details</span>
+               </div>
+            </div>
+            <div class="summary-content-row">
+               <div class="zone-summary-container">
+                  <table class="table table-middle">
+                     <thead></thead>
+                     <tbody>
+                        {{#each memoryDetails}}
+                        <tr>
+                           <td>{{@key}}</td>
+                           <td>{{this}}</td>
+                        </tr>
+                        {{/each}}	
+                     </tbody>
+                  </table>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
 </div>
-<div class="header-meta-info">
-	<p>Apps</p>
-	<div class="item">
-	{{#each apps}}
-		<span class="badge badge-primary badge-pill">{{this}}</span>
-	{{/each}}
-	</div>
-</div>
-<h2>Agent Checks</h2>
-<table>
-	<thead>
-	<th>Check</th>
-	<th>Status</th>
-	</thead>
-	<tbody>
-		{{#each agentChecks}}
-			<tr>
-				<td>{{this.0}}</td>
-				<td>{{this.3}}</td>
-			</tr>
-		{{/each}}
-	</tbody>
-</table>
 
 <style>
+
+.badge {
+	background-color: #632CA6;
+}
 .big-stat-block {
   margin-top: 15px;
   margin-bottom: 40px;
@@ -75,5 +223,5 @@
 }
 </style>
 
-<script src="{{asset "/instance-tab.js"}}" ></script>
-<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="{{asset "/vue.js"}}"></script>
+<script src="{{asset "/chart.js"}}"></script>

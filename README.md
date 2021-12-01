@@ -1,20 +1,43 @@
-The Morpheus plugin architecture is a library which allows users to extend functionality in several categories, including new Cloud providers, Task types, UI views, custom reports, and more. In this guide, we will take a look at developing a custom instance UI tab. Complete developer documentation including the full API documentation and links to Github repositories containing complete code examples are available in the Developer Portal.
+The Morpheus plugin architecture is a library which allows users to extend functionality in several categories, including new Cloud providers, Task types, UI views, custom reports, and more. In this guide, we will take a look at developing a custom instance UI tab. Complete developer documentation including the full API documentation and links to Github repositories containing complete code examples are available in the [Developer Portal](https:/developer.morpheusdata.com).
 
-Custom plugin development requires programming experience but this guide is designed to break down the required steps into a digestible process that users can quickly run with. Morpheus plugins are written in Java or Groovy, our example here will be written in Groovy. Support for additional languages is planned but not yet available at the time of this writing. If you’re not an experienced Java or Groovy developer, it may help to clone an example code repository which we link to in our developer portal. An additional example, which this guide is based on, is here. You can read the example code and tweak it to suit your needs using the guidance in this document.
+Custom plugin development requires some programming experience but this guide is designed to break down the required steps into a digestible process that users can quickly run with. Morpheus plugins are written in Java or Groovy, our example here will be written in Groovy. 
 
-Before you begin, ensure you have the following installed in your development environment:
 
-* Gradle 6.5 or later
-* Java 8 or 11
+**Requirements**
+
+Before we begin, we need to ensure that we've met the following requirements to develop the plugin:
+
+* Gradle 6.5 or later installed
+* Java 8 or 11 installed
 * A DataDog account (https://www.datadoghq.com/)
-
-In this example, you'll create a custom instance UI tab that fetches instance related data from the DataDog monitoring solution. Below that will be a table which shows each Cypher item individually and sorted alphabetically along with their create date and the date they were last accessed.
 
 # Planning the Custom Instance UI Tab Plugin
 
-Before writing any code you should plan out the functionality of your plugin.
+In this example, we'll create a custom instance UI tab that fetches instance related data from the DataDog monitoring solution. Before writing any code we'll plan out the functionality of our plugin.
+
+
+**Overview Section**
+
+The first section we want is an overview page that provides basic information about the instance that DataDog collects.
+
+![DataDog Plugin Overview](/_images/DataDog-Plugin-Overview.png)
+
+**System Information Section**
+
+The next section we want is system information or details that DataDog collects. 
+
+![DataDog Plugin Details](/_images/DataDog-Plugin-Details.png)
+
+**Host Not Found Section**
+
+The final section we want to develop is a placeholder for when there isn't a DataDog agent installed on the system.
+
+![DataDog Plugin Not Found](/_images/DataDog-Plugin-Not-Found.png)
+
 
 ## Understanding the REST API
+
+Now that we know what we want our plugin to functionally do we know need to find out the API calls we need to make in order to fetch the desired information.
 
 [DataDog REST API documentation](https://docs.datadoghq.com/api/latest/)
 
@@ -33,7 +56,6 @@ In this case it makes sense to store the DataDog API and Application keys in Cyp
 
 ### API Calls
 
-With the authentication 
 
 # Developing the plugin
 
@@ -96,17 +118,48 @@ intAppKey.subscribe(
 
 ## Query the DataDog API
 
-
+```
+def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
+```
 
 ## Parse the JSON Response
 
-
 ```
-def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
-
 JsonSlurper slurper = new JsonSlurper()
 def json = slurper.parseText(results.content)
 ```
+
+
+## Managing tab visibility
+
+Now that we've got the core functionality of the plugin developed we want to restrict which instances the tab is displayed for (i.e. - only production, AWS cloud instance , etc.).
+
+### Manage visibility by instance environment
+
+```
+def tabEnvironments = ["all"]
+def environmentStatus = false
+if (tabEnvironments.contains("all")){
+        environmentStatus = true
+} 
+if(tabEnvironments.contains(config.instance.instanceContext)){
+        environmentStatus = true
+}
+```
+
+### Manage visibility by Morpheus group
+
+```
+def tabGroups = ["all"]
+def groupStatus = false
+if(tabGroups.contains("all")){
+        groupStatus = true
+}
+if(tabGroups.contains(instance.site.name)){
+        groupStatus = true
+}
+```
+
 
 
 # Build the JAR

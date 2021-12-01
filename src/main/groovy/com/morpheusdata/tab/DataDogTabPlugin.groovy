@@ -4,6 +4,8 @@ import com.morpheusdata.core.Plugin
 import com.morpheusdata.model.Permission
 import com.morpheusdata.views.HandlebarsRenderer
 import com.morpheusdata.views.ViewModel
+import com.morpheusdata.web.Dispatcher
+
 
 class DataDogTabPlugin extends Plugin {
 

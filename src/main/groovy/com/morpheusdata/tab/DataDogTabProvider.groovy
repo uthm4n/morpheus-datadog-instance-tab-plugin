@@ -41,7 +41,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		ViewModel<Instance> model = new ViewModel<>()
 		
 		// Retrieve additional details about the instance
-		//TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
+		TaskConfig instanceDetails = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
 
 		// Define an object for storing the data retrieved
 		// from the DataDog REST API
@@ -101,6 +101,16 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			def agentChecks = baseHost.meta.agent_checks
 			def apps = baseHost.apps
 
+			// Parse gohai data JSON payload
+			def gohaidata = slurper.parseText(baseHost.meta.gohai)
+			def cpuCores = gohaidata.cpu.cpu_cores
+			def logicalProcessors = gohaidata.cpu.cpu_logical_processors
+			def memory = gohaidata.memory.total
+			def operatingSystem = gohaidata.platform.os
+			def cpuDetails = gohaidata.cpu
+			def platformDetails = gohaidata.platform
+			def memoryDetails = gohaidata.memory
+
 			// Evaluate if the DataDog host mute status is true or false
 			// and pass muted or unmuted instead of true or false to the html template
 			def muteStatus = ""
@@ -112,6 +122,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 
 			// Set the values of the HashMap object
 			// that will be used to populate the HTML template
+			dataDogPayload.put("id", instance.id)
 			dataDogPayload.put("name", instance.name)
 			dataDogPayload.put("apps", apps)
 			dataDogPayload.put("muteStatus", muteStatus)
@@ -119,6 +130,13 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			dataDogPayload.put("checks", checks)
 			dataDogPayload.put("agentChecks", agentChecks)
 			dataDogPayload.put("status", status)
+			dataDogPayload.put("cpuCores", cpuCores)
+			dataDogPayload.put("logicalProcessors", logicalProcessors)
+			dataDogPayload.put("operatingSystem", operatingSystem)
+			dataDogPayload.put("memory", memory)
+			dataDogPayload.put("platformDetails", platformDetails)
+			dataDogPayload.put("cpuDetails", cpuDetails)
+			dataDogPayload.put("memoryDetails", memoryDetails)
 
 			// Set the value of the model object to the HashMap object
 			model.object = dataDogPayload
@@ -131,50 +149,50 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 
 	@Override
 	Boolean show(Instance instance, User user, Account account) {
-		def show = true
-				// Retrieve additional details about the instance
-		//TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
-		println "user has permissions: ${user.permissions}"
-		println "instanceType ${instance.instanceTypeCode}"
-		println "provisionType ${instance.provisionType}"
-		/*def cloudData = morpheus.getCloud().getCloudById(instance.provisionZoneId)
-		String cloudPayload
-		cloudPayload = cloudData.blockingGet()
-		cloudData.subscribe(
-			{ secretData -> 
-                 cloudPayload = secretData.name
-				 println "cloud payload: ${cloudPayload}"
-				 if (cloudPayload == "GRTVSPHERE"){
-					 show = false
-					 return show
-				 }
-				 println "cloud name: ${secretData.name}"
-        	},
-        	{ error ->
-                 println error.printStackTrace()
-        	}
-		)
-		println "tenant ${config.tenant}"
-		println "instance details ${config.instance.createdByUsername}"
-		println "cloud ${config.cloudCode}"
-		println "customOptions ${config.customOptions}"
-		println "configGroup ${config.instance.configGroup}"
-		println "deployGroup ${config.instance.deployGroup}"
-		println "instance context ${config.instance.instanceContext}"
-		println "instance cloud ID ${instance.provisionZoneId }"
-		//println "evars ${config.evars}"
+		def show = false
+		// Retrieve additional details about the instance
+		TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
+		//println "tenant ${config.tenant}"
+		//println "instance details ${config.instance.createdByUsername}"
+		//println "customOptions ${config.customOptions}"
+		//println "instance context ${config.instance.instanceContext}"
+		//println "instance cloud ID ${instance.provisionZoneId}"
+
+		def permissionStatus = false
+		if(user.permissions["datadog-instance-tab"] == "full"){
+			permissionStatus = true
+		}
+		println "Permission status ${permissionStatus}"
 
 		// Only display the tab if the instance
-		// is part of the defined group
-		def tabGroups = []
-		if(config.groupName != ){
+		// is part of the defined environment or all is specified
+		def tabEnvironments = ["all"]
+		def environmentStatus = false
+		if (tabEnvironments.contains("all")){
+			environmentStatus = true
+		} 
+		if(tabEnvironments.contains(config.instance.instanceContext)){
+			environmentStatus = true
+		}
 
+		// Only display the tab if the instance
+		// is part of the defined groups or ALL is specified
+		def tabGroups = ["all"]
+	    def groupStatus = false
+		if(tabGroups.contains("all")){
+			groupStatus = true
 		}
-		*/
-		if(user.permissions["datadog-instance-tab"] != "full"){
-			show = false
+		if(tabGroups.contains(instance.site.name)){
+			groupStatus = true
 		}
-		println "Show status ${show}"
+		println "Group status ${groupStatus}"
+
+		if(permissionStatus == true && 
+		   environmentStatus == true && 
+		   groupStatus == true
+		  ){
+			show = true
+		}
 		return show
 	}
 	/**
