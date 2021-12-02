@@ -71,6 +71,26 @@ In this case it makes sense to store the DataDog API and Application keys in Cyp
 
 ## Making API calls
 
+The Morpheus plugin library includes functions for simplifying the process of making a REST API call to an external system.
+
+base URL
+
+
+|||
+|-|-|
+
+
+```
+def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
+```
+
+The JSON payload returned from the API call can be parsed using the JsonSlurper library.
+
+```
+JsonSlurper slurper = new JsonSlurper()
+def json = slurper.parseText(results.content)
+```
+
 
 # Developing the UI plugin
 
