@@ -11,5 +11,5 @@ jobs:
         with:
           java-version: '8.0.312+7'
           distribution: 'temurin'
-      - name: Build JAR
-        run: ./gradle shadowJar
+      - name: Build with Gradle
+        run: gradle shadowJar
