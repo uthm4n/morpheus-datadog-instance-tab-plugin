@@ -1,8 +1,20 @@
 # Morpheus DataDog UI Plugin
 
-The Morpheus plugin architecture is a library which allows users to extend functionality in several categories, including new Cloud providers, Task types, UI views, custom reports, and more. In this guide, we will take a look at developing a custom instance UI tab. Complete developer documentation including the full API documentation and links to Github repositories containing complete code examples are available in the [Developer Portal](https:/developer.morpheusdata.com).
+The Morpheus plugin architecture is a library which allows the functionality of the Morpheus platform to be extended. This functionality includes support for new Cloud providers, Task types, UI views, custom reports, and more.
 
-Custom plugin development requires some programming experience but this guide is designed to break down the required steps into a digestible process that users can quickly run with. Morpheus plugins are written in Java or Groovy, our example here will be written in Groovy.
+Morpheus plugins are written in Java or Groovy, our example here will be written in Groovy. Complete developer documentation including the full API documentation and links to Github repositories containing complete code examples are available in the [Developer Portal](https:/developer.morpheusdata.com).
+
+In this guide, we'll take a look at developing a custom instance UI tab. Custom plugin development requires some programming experience but this guide is designed to break down the required steps into a digestible process that users can quickly run with.
+
+**Requirements**
+
+Before we begin, we need to ensure that we've met the following requirements to develop the plugin:
+
+* Gradle 6.5 or later installed
+* Java 8 or 11 installed
+* A DataDog account (https://www.datadoghq.com/)
+
+# Table of Contents
 
 [Planning the UI plugin](#planning-the-ui-plugin)
 
@@ -17,15 +29,6 @@ Custom plugin development requires some programming experience but this guide is
 [Build the UI plugin](#build-the-ui-plugin)
 
 [Install and configure the UI plugin](#install-and-configure-the-ui-plugin)
-
-
-**Requirements**
-
-Before we begin, we need to ensure that we've met the following requirements to develop the plugin:
-
-* Gradle 6.5 or later installed
-* Java 8 or 11 installed
-* A DataDog account (https://www.datadoghq.com/)
 
 # Planning the UI plugin
 
@@ -49,48 +52,21 @@ The final section we want to develop is a placeholder for when there isn't a Dat
 
 ![DataDog Plugin Not Found](/_images/DataDog-Plugin-Not-Found.png)
 
-
 ## Understanding the REST API
 
-Now that we know what we want our plugin to functionally do we know need to find out the API calls we need to make in order to fetch the desired information.
-
-[DataDog REST API documentation](https://docs.datadoghq.com/api/latest/)
+Now that we know what we want our plugin to do, we need the API calls to gather the necessary data. The [DataDog REST API documentation](https://docs.datadoghq.com/api/latest/) details the various API calls that the platform supports along with the response payload.
 
 ### Authentication
 
-The DataDog REST API requires an API key as well as an Application key since we'll be fetching or getting data from the REST API.
-
-https://docs.datadoghq.com/account_management/api-app-keys/#api-keys
+The DataDog REST API requires an API key as well as an Application key since we'll be fetching or getting data from the REST API. The process for generating the two keys are detailed in the DataDog [documentation](https://docs.datadoghq.com/account_management/api-app-keys/#api-keys).
 
 ## Storing sensitive data
 
-Morpheus Cypher provides a native secure storage feature
-
-In this case it makes sense to store the DataDog API and Application keys in Cypher.
-
+Now that we know the credentials we'll need for interacting with the API, we need somewhere to store them. Morpheus Cypher provides a native method for securely storing sensitive data, such as API keys.
 
 ## Making API calls
 
 The Morpheus plugin library includes functions for simplifying the process of making a REST API call to an external system.
-
-base URL
-
-
-|||
-|-|-|
-
-
-```
-def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
-```
-
-The JSON payload returned from the API call can be parsed using the JsonSlurper library.
-
-```
-JsonSlurper slurper = new JsonSlurper()
-def json = slurper.parseText(results.content)
-```
-
 
 # Developing the UI plugin
 
@@ -111,6 +87,10 @@ src/assets/stylesheets/
 Configure the .gitignore file to ignore the build/ directory which will appear after performing the first build. Project packages live within src/main/groovy and contain source files ending in .groovy. View resources are stored in the src/main/resources subfolder and vary depending on the view renderer of choice. Static assets, like icons or custom javascript, live within the src/assets folder. Consult the table below for key files, their purpose, and their locations. Example code and further discussion of relevant files is included in the following sections.
 
 ## Store the credentials in Morpheus Cypher
+
+The credentials for interacting with the DataDog REST API will be stored in the cypher secure storage. The [cypher service](https://developer.morpheusdata.com/api/com/morpheusdata/core/cypher/MorpheusCypherService.html) enables us to easily interact with cypher to retrieve the API keys.
+
+The first thing we need to do is initialize our access to cypher which requires the account or tenant ID where the credentials are stored. This example assumes that the credentials are stored in the Morpheus master tenant.
 
 ```
 def account = new Account(id: 1)
@@ -153,23 +133,28 @@ intAppKey.subscribe(
 
 ## Query the DataDog API
 
+With credentials we're now ready to define our API call to the DataDog API endpoint. We'll use the REST API helper included in the plugin library to simplify the API call.
+
 ```
 def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
 ```
 
 ## Parse the JSON Response
 
+Now that we've got the response payload we'll use the JsonSlurper library to parse the JSON.
+
 ```
 JsonSlurper slurper = new JsonSlurper()
 def json = slurper.parseText(results.content)
 ```
-
 
 ## Managing tab visibility
 
 Now that we've got the core functionality of the plugin developed we want to restrict which instances the tab is displayed for (i.e. - only production, AWS cloud instance , etc.).
 
 ### Manage visibility by instance environment
+
+The Morpheus environment that an instance or virtual machine belongs to can be used to determine the visibility of the DataDog plugin tab.
 
 ```
 def tabEnvironments = ["all"]
@@ -184,6 +169,8 @@ if(tabEnvironments.contains(config.instance.instanceContext)){
 
 ### Manage visibility by Morpheus group
 
+The Morpheus group that an instance or virtual machine belongs to can be used to determine the visibility of the DataDog plugin tab.
+
 ```
 def tabGroups = ["all"]
 def groupStatus = false
@@ -194,8 +181,6 @@ if(tabGroups.contains(instance.site.name)){
         groupStatus = true
 }
 ```
-
-
 
 # Build the UI plugin
 With the code written, we'll use gradle to build the JAR which we'll upload to Morpheus to install the plugin. To do so, change directory into the location of the directory created earlier to hold your custom plugin code.
@@ -210,7 +195,7 @@ Run gradle to build a new version of the plugin.
 gradle shadowJar
 ```
 
-Once the build process has completed, locate the JAR in the build/libs directory
+Once the build process has completed, locate the JAR in the build/libs directory.
 
 # Install and configure the UI plugin
 Custom plugins are added to Morpheus through the Plugins tab in the Integrations section.

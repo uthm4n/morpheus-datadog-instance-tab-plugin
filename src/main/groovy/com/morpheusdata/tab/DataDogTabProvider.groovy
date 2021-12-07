@@ -38,6 +38,9 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 
 	@Override
 	HTMLResponse renderTemplate(Instance instance) {
+
+		// Instantiate an object for storing data
+		// passed to the html template
 		ViewModel<Instance> model = new ViewModel<>()
 		
 		// Retrieve additional details about the instance
@@ -48,7 +51,8 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		def HashMap<String, String> dataDogPayload = new HashMap<String, String>();
 
 		// Define the Morpheus account/tenant in which
-		// to search for the DataDog credentials
+		// to search for the DataDog credentials. The plugin
+		// assumes the master account shoud be searched.
 		def account = new Account(id: 1)
 		def cypherAccess = new CypherAccess(account)
 
@@ -82,18 +86,21 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		// host filter using the name of the Morpheus instance.
 		// The DataDog API endpoint expects headers of DD-APPLICATION-KEY
 		// and DD-API-KEY for authentication purposes.
+		// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
 		def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
+
+		// Parse the JSON response payload returned
+		// from the REST API call.
 		JsonSlurper slurper = new JsonSlurper()
 		def json = slurper.parseText(results.content)
-		println "host data: $json"
 
 		// Evaluate whether the query returned a host.
 		// If the host was not found then render the HTML template
 		// for when a host isn't found
 		if (json.host_list.size == 0){
-			println "host data not found"
 			getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
 		} else {
+			// Store objects from the response payload
 			def baseHost = json.host_list[0]
 			def status = baseHost.up
 			def agentVersion = baseHost.meta.agent_version
@@ -101,7 +108,10 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			def agentChecks = baseHost.meta.agent_checks
 			def apps = baseHost.apps
 
-			// Parse gohai data JSON payload
+			// Parse the gohai data JSON payload.
+			// This step is necessary because there is
+			// a JSON payload embedded in the original response
+			// stored in as a string which needs to be parsed.
 			def gohaidata = slurper.parseText(baseHost.meta.gohai)
 			def cpuCores = gohaidata.cpu.cpu_cores
 			def logicalProcessors = gohaidata.cpu.cpu_logical_processors
@@ -120,7 +130,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				muteStatus = "unmuted"
 			}
 
-			// Set the values of the HashMap object
+			// Set the values of the HashMap object (defined on line #51)
 			// that will be used to populate the HTML template
 			dataDogPayload.put("id", instance.id)
 			dataDogPayload.put("name", instance.name)
@@ -147,28 +157,33 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		}
 	}
 
+
+	// This method contains the logic for when the tab
+	// should be displayed in the UI
 	@Override
 	Boolean show(Instance instance, User user, Account account) {
+		// Set the tab to not be shown be default
 		def show = false
+
 		// Retrieve additional details about the instance
 		TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
 		//println "tenant ${config.tenant}"
 		//println "instance details ${config.instance.createdByUsername}"
 		//println "customOptions ${config.customOptions}"
-		//println "instance context ${config.instance.instanceContext}"
 		//println "instance cloud ID ${instance.provisionZoneId}"
 
+		// Only display the tab if the user
+		// accessing the instance has the correct permission
 		def permissionStatus = false
 		if(user.permissions["datadog-instance-tab"] == "full"){
 			permissionStatus = true
 		}
-		println "Permission status ${permissionStatus}"
 
 		// Only display the tab if the instance
-		// is part of the defined environment or all is specified
-		def tabEnvironments = ["all"]
+		// is part of the defined environment or any is specified
+		def tabEnvironments = ["any"]
 		def environmentStatus = false
-		if (tabEnvironments.contains("all")){
+		if (tabEnvironments.contains("any")){
 			environmentStatus = true
 		} 
 		if(tabEnvironments.contains(config.instance.instanceContext)){
@@ -176,17 +191,18 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		}
 
 		// Only display the tab if the instance
-		// is part of the defined groups or ALL is specified
-		def tabGroups = ["all"]
+		// is part of the defined groups or any is specified
+		def tabGroups = ["any"]
 	    def groupStatus = false
-		if(tabGroups.contains("all")){
+		if(tabGroups.contains("any")){
 			groupStatus = true
 		}
 		if(tabGroups.contains(instance.site.name)){
 			groupStatus = true
 		}
-		println "Group status ${groupStatus}"
 
+		// Only display the tab if the all
+		// of the previous evaluations are true
 		if(permissionStatus == true && 
 		   environmentStatus == true && 
 		   groupStatus == true
