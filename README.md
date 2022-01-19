@@ -60,10 +60,6 @@ Now that we know what we want our plugin to do, we need the API calls to gather 
 
 The DataDog REST API requires an API key as well as an Application key since we'll be fetching or getting data from the REST API. The process for generating the two keys are detailed in the DataDog [documentation](https://docs.datadoghq.com/account_management/api-app-keys/#api-keys).
 
-## Storing sensitive data
-
-Now that we know the credentials we'll need for interacting with the API, we need somewhere to store them. Morpheus Cypher provides a native method for securely storing sensitive data, such as API keys.
-
 ## Making API calls
 
 The Morpheus plugin library includes functions for simplifying the process of making a REST API call to an external system.
@@ -86,57 +82,115 @@ src/assets/stylesheets/
 
 Configure the .gitignore file to ignore the build/ directory which will appear after performing the first build. Project packages live within src/main/groovy and contain source files ending in .groovy. View resources are stored in the src/main/resources subfolder and vary depending on the view renderer of choice. Static assets, like icons or custom javascript, live within the src/assets folder. Consult the table below for key files, their purpose, and their locations. Example code and further discussion of relevant files is included in the following sections.
 
-## Store the credentials in Morpheus Cypher
+## Updating the build.gradle file
 
-The credentials for interacting with the DataDog REST API will be stored in the cypher secure storage. The [cypher service](https://developer.morpheusdata.com/api/com/morpheusdata/core/cypher/MorpheusCypherService.html) enables us to easily interact with cypher to retrieve the API keys.
-
-The first thing we need to do is initialize our access to cypher which requires the account or tenant ID where the credentials are stored. This example assumes that the credentials are stored in the Morpheus master tenant.
+The `build.gradle` file contains information used during the build of the plugin. The example included is sufficient for most use cases with a few updates detailed in the table below.
 
 ```
-def account = new Account(id: 1)
-def cypherAccess = new CypherAccess(account)
-```
+plugins {
+    id "com.bertramlabs.asset-pipeline" version "3.3.2"
+    id "com.github.johnrengelman.plugin-shadow" version "2.0.3"
+}
 
-**Retrieve the API key**
+apply plugin: 'java'
+apply plugin: 'groovy'
+apply plugin: 'maven-publish'
 
-The API Key used to authenticate to the DataDog API is stored in Morpheus Cypher so the plugin needs to retrieve the API key before making an API call to fetch the instance data. The plugin expects the cypher secret to be named `dd-api-key` in order to retrieve the value from cypher.
+group = 'com.morpheusdata'
+version = '0.0.2'
 
-```
-def intApiKey = morpheus.getCypher().read(cypherAccess, "secret/dd-api-key")
-def apiKey = ""
-intApiKey.subscribe(
-    { secretData -> 
-            apiKey = secretData
-    },
-    { error ->
-            println error.printStackTrace()
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'com.morpheusdata:morpheus-plugin-api:0.12.0'
+    compileOnly 'org.codehaus.groovy:groovy-all:2.5.6'
+    compileOnly 'io.reactivex.rxjava2:rxjava:2.2.0'
+    compileOnly "org.slf4j:slf4j-api:1.7.26"
+    compileOnly "org.slf4j:slf4j-parent:1.7.26"
+}
+
+jar {
+    manifest {
+        attributes(
+	    'Plugin-Class': 'com.morpheusdata.tab.DataDogTabPlugin',
+            'Plugin-Version': archiveVersion.get() // Get version defined in gradle
+        )
     }
+}
+
+tasks.assemble.dependsOn tasks.shadowJar
+```
+
+|Name|Description|Example|
+|----|-----------|-------|
+|group|The group of the project or an identifier of who owns the plugins. This is typically a domain that is associated with the individual developer or organization.|com.morpheusdata|
+|version|The version of the plugin which will appear in the Morpheus UI|0.0.2|
+|dependencies|The plugin utilizes a number of dependencies for functionality and the `morpheus-plugin-api` dependency is the one of particular interest to us. The available release versions can be found on [Maven Central](https://search.maven.org/artifact/com.morpheusdata/morpheus-plugin-api) where the releases are hosted. **Versions of the dependency align with specified versions of the Morpheus platform** |com.morpheusdata:morpheus-plugin-api:0.12.0|
+|plugin-class|The name of the plugin class (group.packageName.className). In the example this also aligns with the folder structure of com/morpheusdata/tab/DataDogTabPlugin.groovy |com.morpheusdata.tab.DataDogTabPlugin|
+
+## Plugin Settings
+The plugin should support runtime configuration to allow administrators to update the configuration of the plugin without the need to rebuild it. The 5.4.1 release of the Morpheus platform added supported for plugin settings which enable the plugin to support runtime configuration.
+
+In our example we want to expose a few runtime configuration settings such as the API credentials and conditions for when the tab should be visible. The table below details the settings that the plugin supports.
+
+|Name|Description|
+|----|-----------|
+|DataDog API Key|The API key used for authenticating to the DataDog REST API|
+|DataDog Application Key|The application key used for authenticating to the DatDog REST API|
+|Environment Visibility|The setting to define which Morpheus environments that a workload belongs to for the tab to be visible|
+|Group Visibility|The setting to define which Morpheus groups that a workload belongs to for the tab to be visible|
+
+
+### Defining Plugin Settings
+The plugin settings are defined in the plugin [definition file](/src/main/groovy/com/morpheusdata/tab/DataDogTabPlugin.groovy) as option types similar to the option types or inputs used in other areas of the Morpheus platform. One item of note is the `fieldName` which is used as the reference for when retrieving the value specified from within the code.
+
+```
+this.settings << new OptionType(
+        name: 'API Key',
+        code: 'datadog-plugin-api-key',
+        fieldName: 'ddApiKey',
+        displayOrder: 0,
+        fieldLabel: 'API Key',
+        helpText: 'The DataDog API key',
+        required: true,
+        inputType: OptionType.InputType.PASSWORD
 )
 ```
 
-**Retrieve the Application key**
+### Retrieving Plugin Settings
 
-The Application key used to authenticate to the DataDog API is stored in Morpheus Cypher so the plugin needs to retrieve the Application key before making an API call to fetch the instance data. The plugin expects the cypher secret to be named `dd-application-key` in order to retrieve the value from cypher.
+The plugin settings enable administrators to update the runtime configuration of the plugin and so we need to reference them in our code. The settings are accessible by retrieving them and parsing the JSON payload.
 
 ```
-def intAppKey = morpheus.getCypher().read(cypherAccess, "secret/dd-application-key")
-def appKey = ""
-intAppKey.subscribe(
-    { secretData -> 
-            appKey = secretData
-    },
-    { error ->
-            println error.printStackTrace()
-    }
+def settings = morpheus.getSettings(plugin)
+def settingsOutput = ""
+settings.subscribe(
+        { outData -> 
+        settingsOutput = outData
+},
+{ error ->
+        println error.printStackTrace()
+}
 )
+JsonSlurper slurper = new JsonSlurper()
+def settingsJson = slurper.parseText(settingsOutput)
 ```
+
+In our example the value of the settings will be available using dot notation (i.e. - settingsJson.settingFieldName). This is where fieldName value of the plugin settings is referenced.
 
 ## Query the DataDog API
 
 With credentials we're now ready to define our API call to the DataDog API endpoint. We'll use the REST API helper included in the plugin library to simplify the API call.
 
 ```
-def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
+def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 ```
 
 ## Parse the JSON Response
@@ -148,22 +202,66 @@ JsonSlurper slurper = new JsonSlurper()
 def json = slurper.parseText(results.content)
 ```
 
+The parsed payload supports accessing the payload values using dot notation. The example below which is been truncated for brevity shows how the payload is accessed and ultimately passed to the html template file.
+
+```
+if (json.host_list.size == 0){
+        getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
+} else {
+        // Store objects from the response payload
+        def baseHost = json.host_list[0]
+        def apps = baseHost.apps
+        def agentVersion = baseHost.meta.agent_version
+        def checks = baseHost.meta.agent_checks.size
+        def agentChecks = baseHost.meta.agent_checks
+
+        dataDogPayload.put("id", instance.id)
+        dataDogPayload.put("apps", apps)
+        dataDogPayload.put("agentVersion", agentVersion)
+        dataDogPayload.put("checks", checks)
+        dataDogPayload.put("agentChecks", agentChecks)
+        // Set the value of the model object to the HashMap object
+        model.object = dataDogPayload
+
+        // Render the HTML template located in 
+        // resources/renderer/hbs/instanceTab.hbs
+        getRenderer().renderTemplate("hbs/instanceTab", model)
+}
+```
+
 ## Managing tab visibility
 
 Now that we've got the core functionality of the plugin developed we want to restrict which instances the tab is displayed for (i.e. - only production, AWS cloud instance , etc.).
+
+### Manage visibility with Morpheus RBAC
+
+The RBAC permissions associated with a user can be used to determine
+the visibility of the DataDog plugin tab.
+
+```
+def permissionStatus = false
+if(user.permissions["datadog-instance-tab"] == "full"){
+    permissionStatus = true
+}
+```
 
 ### Manage visibility by instance environment
 
 The Morpheus environment that an instance or virtual machine belongs to can be used to determine the visibility of the DataDog plugin tab.
 
 ```
-def tabEnvironments = ["all"]
+def tabEnvironments = settingsJson.environmentVisibilityField.split(",");
+def visibleEnvironments = []
+for(environment in tabEnvironments){
+    visibleEnvironments.add(environment.trim())
+}
+println visibleEnvironments
 def environmentStatus = false
-if (tabEnvironments.contains("all")){
-        environmentStatus = true
+if (visibleEnvironments.contains("any")){
+    environmentStatus = true
 } 
-if(tabEnvironments.contains(config.instance.instanceContext)){
-        environmentStatus = true
+if(visibleEnvironments.contains(config.instance.instanceContext)){
+    environmentStatus = true
 }
 ```
 
@@ -172,13 +270,18 @@ if(tabEnvironments.contains(config.instance.instanceContext)){
 The Morpheus group that an instance or virtual machine belongs to can be used to determine the visibility of the DataDog plugin tab.
 
 ```
-def tabGroups = ["all"]
-def groupStatus = false
-if(tabGroups.contains("all")){
-        groupStatus = true
+def tabGroups = settingsJson.groupVisibilityField.split(",");
+def visibleGroups = []
+for(group in tabGroups){
+    visibleGroups.add(group.trim())
 }
-if(tabGroups.contains(instance.site.name)){
-        groupStatus = true
+println visibleGroups
+def groupStatus = false
+if(visibleGroups.contains("any")){
+    groupStatus = true
+}
+if(visibleGroups.contains(instance.site.name)){
+    groupStatus = true
 }
 ```
 
@@ -197,10 +300,24 @@ gradle shadowJar
 
 Once the build process has completed, locate the JAR in the build/libs directory.
 
-# Install and configure the UI plugin
-Custom plugins are added to Morpheus through the Plugins tab in the Integrations section.
+# Install and Configure the UI plugin
+Custom plugins are added to Morpheus through the Plugins tab in the Integrations section of the Morpheus UI.
+
+**Install the plugin**
+
+![DataDog Plugin Installation](/_images/DataDog-Plugin-Installation.png)
 
 1. Navigate to Administration > Integrations > Plugins and click CHOOSE FILE. 
 2. Browse for your JAR file and upload it to Morpheus. 
 3. The new plugin will be added next to any other custom plugins that may have been developed for your appliance.
 
+![DataDog Plugin Successful Installation](/_images/DataDog-Plugin-Installed.png)
+
+**Configure the plugin**
+
+1. Click on the pencil to the right of the plugin to open the configuration modal.
+
+![DataDog Plugin Settings](/_images/DataDog-Plugin-Settings.png)
+
+2. Enter the API and Application keys used to authenticate to the DataDog REST API.
+3. Click the `SAVE` button to save the changes.

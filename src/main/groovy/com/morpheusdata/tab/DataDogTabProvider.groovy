@@ -44,54 +44,40 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		ViewModel<Instance> model = new ViewModel<>()
 		
 		// Retrieve additional details about the instance
+        // https://developer.morpheusdata.com/api/com/morpheusdata/model/TaskConfig.InstanceConfig.html
 		TaskConfig instanceDetails = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
 
 		// Define an object for storing the data retrieved
 		// from the DataDog REST API
 		def HashMap<String, String> dataDogPayload = new HashMap<String, String>();
 
-		// Define the Morpheus account/tenant in which
-		// to search for the DataDog credentials. The plugin
-		// assumes the master account shoud be searched.
-		def account = new Account(id: 1)
-		def cypherAccess = new CypherAccess(account)
-
-		// Retrieve the DataDog API key from Cypher
-		// The plugin expects the name of the secret to be dd-api-key
-		def intApiKey = morpheus.getCypher().read(cypherAccess, "secret/dd-api-key")
-		def apiKey = ""
-		intApiKey.subscribe(
-			{ secretData -> 
-                 apiKey = secretData
+        // Retrieve plugin settings
+		def settings = morpheus.getSettings(plugin)
+		def settingsOutput = ""
+		settings.subscribe(
+			{ outData -> 
+                 settingsOutput = outData
         	},
         	{ error ->
                  println error.printStackTrace()
         	}
 		)
 
-		// Retrieve the DataDog Application key from Cypher
-		// The plugin expects the name of the secret to be dd-application-key
-		def intAppKey = morpheus.getCypher().read(cypherAccess, "secret/dd-application-key")
-		def appKey = ""
-		intAppKey.subscribe(
-			{ secretData -> 
-                 appKey = secretData
-        	},
-        	{ error ->
-                 println error.printStackTrace()
-        	}
-		)
+		// Parse the plugin settings payload. The settings will be available as
+		// settingsJson.$optionTypeFieldName i.e. - settingsJson.ddApiKey to retrieve the DataDog API key setting
+		JsonSlurper slurper = new JsonSlurper()
+		def settingsJson = slurper.parseText(settingsOutput)
 
 		// Query the DataDog hosts REST API endpoint with a 
 		// host filter using the name of the Morpheus instance.
 		// The DataDog API endpoint expects headers of DD-APPLICATION-KEY
-		// and DD-API-KEY for authentication purposes.
+		// and DD-API-KEY for authentication purposes. 
+		// The payload using the API and Application key from the plugin settings.
 		// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
-		def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':apiKey,'DD-APPLICATION-KEY':appKey], ignoreSSL: false), 'GET')
+		def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 
 		// Parse the JSON response payload returned
 		// from the REST API call.
-		JsonSlurper slurper = new JsonSlurper()
 		def json = slurper.parseText(results.content)
 
 		// Evaluate whether the query returned a host.
@@ -111,7 +97,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			// Parse the gohai data JSON payload.
 			// This step is necessary because there is
 			// a JSON payload embedded in the original response
-			// stored in as a string which needs to be parsed.
+			// as a string which needs to be parsed.
 			def gohaidata = slurper.parseText(baseHost.meta.gohai)
 			def cpuCores = gohaidata.cpu.cpu_cores
 			def logicalProcessors = gohaidata.cpu.cpu_logical_processors
@@ -165,6 +151,20 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		// Set the tab to not be shown be default
 		def show = false
 
+        // Retrieve plugin settings
+		def settings = morpheus.getSettings(plugin)
+		def settingsOutput = ""
+		settings.subscribe(
+			{ outData -> 
+                 settingsOutput = outData
+        	},
+        	{ error ->
+                 println error.printStackTrace()
+        	}
+		)
+		JsonSlurper slurper = new JsonSlurper()
+		def settingsJson = slurper.parseText(settingsOutput)
+
 		// Retrieve additional details about the instance
 		TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
 		//println "tenant ${config.tenant}"
@@ -180,24 +180,38 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		}
 
 		// Only display the tab if the instance
-		// is part of the defined environment or any is specified
-		def tabEnvironments = ["any"]
+		// is part of the defined environment or any is specified.
+		// The environment names should be provided in a comma seperated list
+		// and we iterate through the list to remove any leading and trailing whitespaces
+		def tabEnvironments = settingsJson.environmentVisibilityField.split(",");
+		def visibleEnvironments = []
+		for(environment in tabEnvironments){
+			visibleEnvironments.add(environment.trim())
+		}
+		println visibleEnvironments
 		def environmentStatus = false
-		if (tabEnvironments.contains("any")){
+		if (visibleEnvironments.contains("any")){
 			environmentStatus = true
 		} 
-		if(tabEnvironments.contains(config.instance.instanceContext)){
+		if(visibleEnvironments.contains(config.instance.instanceContext)){
 			environmentStatus = true
 		}
 
 		// Only display the tab if the instance
-		// is part of the defined groups or any is specified
-		def tabGroups = ["any"]
+		// is part of the defined groups or any is specified.
+		// The group names should be provided in a comma seperated list
+		// and we iterate through the list to remove any leading and trailing whitespaces
+		def tabGroups = settingsJson.groupVisibilityField.split(",");
+        def visibleGroups = []
+		for(group in tabGroups){
+			visibleGroups.add(group.trim())
+		}
+		println visibleGroups
 	    def groupStatus = false
-		if(tabGroups.contains("any")){
+		if(visibleGroups.contains("any")){
 			groupStatus = true
 		}
-		if(tabGroups.contains(instance.site.name)){
+		if(visibleGroups.contains(instance.site.name)){
 			groupStatus = true
 		}
 
