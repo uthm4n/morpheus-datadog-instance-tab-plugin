@@ -152,77 +152,80 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		def show = false
 
         // Retrieve plugin settings
-		def settings = morpheus.getSettings(plugin)
-		def settingsOutput = ""
-		settings.subscribe(
-			{ outData -> 
-                 settingsOutput = outData
-        	},
-        	{ error ->
-                 println error.printStackTrace()
-        	}
-		)
-		JsonSlurper slurper = new JsonSlurper()
-		def settingsJson = slurper.parseText(settingsOutput)
+		try {
+			def settings = morpheus.getSettings(plugin)
+			def settingsOutput = ""
+			settings.subscribe(
+				{ outData ->
+					settingsOutput = outData
+				},
+				{ error ->
+					println error.printStackTrace()
+				}
+			)
+			JsonSlurper slurper = new JsonSlurper()
+			def settingsJson = slurper.parseText(settingsOutput)
 
-		// Retrieve additional details about the instance
-		TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
-		//println "tenant ${config.tenant}"
-		//println "instance details ${config.instance.createdByUsername}"
-		//println "customOptions ${config.customOptions}"
-		//println "instance cloud ID ${instance.provisionZoneId}"
+			// Retrieve additional details about the instance
+			TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
+			//println "tenant ${config.tenant}"
+			//println "instance details ${config.instance.createdByUsername}"
+			//println "customOptions ${config.customOptions}"
+			//println "instance cloud ID ${instance.provisionZoneId}"
 
-		// Only display the tab if the user
-		// accessing the instance has the correct permission
-		def permissionStatus = false
-		if(user.permissions["datadog-instance-tab"] == "full"){
-			permissionStatus = true
-		}
+			// Only display the tab if the user
+			// accessing the instance has the correct permission
+			def permissionStatus = false
+			if(user.permissions["datadog-instance-tab"] == "full"){
+				permissionStatus = true
+			}
 
-		// Only display the tab if the instance
-		// is part of the defined environment or any is specified.
-		// The environment names should be provided in a comma seperated list
-		// and we iterate through the list to remove any leading and trailing whitespaces
-		def tabEnvironments = settingsJson.environmentVisibilityField.split(",");
-		def visibleEnvironments = []
-		for(environment in tabEnvironments){
-			visibleEnvironments.add(environment.trim())
-		}
-		println visibleEnvironments
-		def environmentStatus = false
-		if (visibleEnvironments.contains("any")){
-			environmentStatus = true
-		} 
-		if(visibleEnvironments.contains(config.instance.instanceContext)){
-			environmentStatus = true
-		}
+			// Only display the tab if the instance
+			// is part of the defined environment or any is specified.
+			// The environment names should be provided in a comma seperated list
+			// and we iterate through the list to remove any leading and trailing whitespaces
+			def tabEnvironments = settingsJson.environmentVisibilityField.split(",");
+			def visibleEnvironments = []
+			for(environment in tabEnvironments){
+				visibleEnvironments.add(environment.trim())
+			}
+			def environmentStatus = false
+			if (visibleEnvironments.contains("any")){
+				environmentStatus = true
+			}
+			if(visibleEnvironments.contains(config.instance.instanceContext)){
+				environmentStatus = true
+			}
 
-		// Only display the tab if the instance
-		// is part of the defined groups or any is specified.
-		// The group names should be provided in a comma seperated list
-		// and we iterate through the list to remove any leading and trailing whitespaces
-		def tabGroups = settingsJson.groupVisibilityField.split(",");
-        def visibleGroups = []
-		for(group in tabGroups){
-			visibleGroups.add(group.trim())
-		}
-		println visibleGroups
-	    def groupStatus = false
-		if(visibleGroups.contains("any")){
-			groupStatus = true
-		}
-		if(visibleGroups.contains(instance.site.name)){
-			groupStatus = true
-		}
+			// Only display the tab if the instance
+			// is part of the defined groups or any is specified.
+			// The group names should be provided in a comma seperated list
+			// and we iterate through the list to remove any leading and trailing whitespaces
+			def tabGroups = settingsJson.groupVisibilityField.split(",");
+			def visibleGroups = []
+			for(group in tabGroups){
+				visibleGroups.add(group.trim())
+			}
+			def groupStatus = false
+			if(visibleGroups.contains("any")){
+				groupStatus = true
+			}
+			if(visibleGroups.contains(instance.site.name)){
+				groupStatus = true
+			}
 
-		// Only display the tab if the all
-		// of the previous evaluations are true
-		if(permissionStatus == true && 
-		   environmentStatus == true && 
-		   groupStatus == true
-		  ){
-			show = true
+			// Only display the tab if the all
+			// of the previous evaluations are true
+			if(permissionStatus == true &&
+			environmentStatus == true &&
+			groupStatus == true
+			){
+				show = true
+			}
 		}
+		catch(Exception ex) {
+          println "Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured."
+        }
 		return show
 	}
 	/**
