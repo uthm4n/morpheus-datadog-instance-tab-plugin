@@ -15,7 +15,9 @@ import com.morpheusdata.core.util.RestApiUtil
 import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.reactivex.Single
+import groovy.util.logging.Slf4j
 
+@Slf4j
 class DataDogTabProvider extends AbstractInstanceTabProvider {
 	Plugin plugin
 	MorpheusContext morpheus
@@ -74,7 +76,8 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		// and DD-API-KEY for authentication purposes. 
 		// The payload using the API and Application key from the plugin settings.
 		// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
-		def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${instance.name}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
+		def normalizedInstanceName = instance.name.toLowerCase()
+		def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${normalizedInstanceName}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 
 		// Parse the JSON response payload returned
 		// from the REST API call.
@@ -90,7 +93,13 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			def baseHost = json.host_list[0]
 			def status = baseHost.up
 			def agentVersion = baseHost.meta.agent_version
-			def checks = baseHost.meta.agent_checks.size
+			log.info("DatDog agent checks: ${baseHost.meta.agent_checks}")
+			def checks = 0
+			if (baseHost.meta.agent_checks == null){
+			  checks = 0
+			} else {
+			  checks = baseHost.meta.agent_checks.size
+			}
 			def agentChecks = baseHost.meta.agent_checks
 			def apps = baseHost.apps
 
@@ -119,7 +128,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			// Set the values of the HashMap object (defined on line #51)
 			// that will be used to populate the HTML template
 			dataDogPayload.put("id", instance.id)
-			dataDogPayload.put("name", instance.name)
+			dataDogPayload.put("name", normalizedInstanceName)
 			dataDogPayload.put("apps", apps)
 			dataDogPayload.put("muteStatus", muteStatus)
 			dataDogPayload.put("agentVersion", agentVersion)
@@ -168,7 +177,6 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 
 			// Retrieve additional details about the instance
 			TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
-			//println "tenant ${config.tenant}"
 			//println "instance details ${config.instance.createdByUsername}"
 			//println "customOptions ${config.customOptions}"
 			//println "instance cloud ID ${instance.provisionZoneId}"
@@ -177,7 +185,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			// accessing the instance has the correct permission
 			def permissionStatus = false
 			if(user.permissions["datadog-instance-tab"] == "full"){
-				permissionStatus = true
+			    permissionStatus = true
 			}
 
 			// Only display the tab if the instance
@@ -214,17 +222,42 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				groupStatus = true
 			}
 
+			// Only display the tab if the instance
+			// has a tag in the defined tags or any is specified.
+			// The tag names should be provided in a comma seperated list
+			// and we iterate through the list to remove any leading and trailing whitespaces
+			def tabTags = settingsJson.tagVisibilityField.split(",");
+			def visibleTags = []
+			for(tag in tabTags){
+				visibleTags.add(tag.trim())
+			}
+			def tagStatus = false
+			if(visibleTags.contains("any")){
+				tagStatus = true
+			}
+
+			def tags = config.instance.metadata
+			for(tag in visibleTags){
+				if(tags.containsKey(tag)){
+					tagStatus = true
+				}
+			}
+
 			// Only display the tab if the all
 			// of the previous evaluations are true
-			if(permissionStatus == true &&
-			environmentStatus == true &&
-			groupStatus == true
+			if(permissionStatus == true && environmentStatus == true &&
+			   tagStatus == true && groupStatus == true
 			){
 				show = true
 			}
+			//log.info("Permission status: ${permissionStatus}")
+			//log.info("Environment status: ${environmentStatus}")
+			//log.info("Group status: ${groupStatus}")
+			//log.info("Tag status: ${tagStatus}")
+			//log.info("Show status: ${show}")
 		}
 		catch(Exception ex) {
-          println "Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured."
+          log.info("Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured.")
         }
 		return show
 	}

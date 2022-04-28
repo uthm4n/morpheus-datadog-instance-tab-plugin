@@ -73,6 +73,19 @@ class DataDogTabPlugin extends Plugin {
 			required: false,
 			inputType: OptionType.InputType.TEXT
 		)
+
+		this.settings << new OptionType(
+			name: 'Visible Tags',
+			code: 'datadog-plugin-tags-field',
+			fieldName: 'tagVisibilityField',
+			defaultValue: 'any',
+			displayOrder: 3,
+			fieldLabel: 'Tags',
+			fieldGroup: 'Visibility Settings',
+			helpText: 'List of the names of the Morpheus tags the tab is visible (i.e. - datadog,monitoring,observability)',
+			required: false,
+			inputType: OptionType.InputType.TEXT
+		)
 	}
 
 	@Override

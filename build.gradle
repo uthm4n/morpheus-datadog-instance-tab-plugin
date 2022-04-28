@@ -30,7 +30,16 @@ dependencies {
 jar {
     manifest {
         attributes(
-	    'Plugin-Class': 'com.morpheusdata.tab.DataDogTabPlugin',
+            'Morpheus-Name': 'DataDog Plugin',
+            'Morpheus-Organization': 'morpheus',
+            'Morpheus-Code': 'datadog-plugin',
+            'Morpheus-Description': 'Plugin for DataDog Integration',
+            'Morpheus-Logo': 'assets/datadog-log.png',
+            'Morpheus-Logo-Dark': 'assets/datadog-logo.png',
+            'Morpheus-Labels': 'Plugin, Monitoring, DataDog',
+            'Morpheus-Repo': 'https://github.com/martezr/morpheus-datadog-instance-tab-plugin',
+            'Morpheus-Min-Appliance-Version': "5.4.3",
+            'Plugin-Class': 'com.morpheusdata.tab.DataDogTabPlugin',
             'Plugin-Version': archiveVersion.get() // Get version defined in gradle
         )
     }
