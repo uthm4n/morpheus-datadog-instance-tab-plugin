@@ -34,7 +34,7 @@ jar {
             'Morpheus-Organization': 'morpheus',
             'Morpheus-Code': 'datadog-plugin',
             'Morpheus-Description': 'Plugin for DataDog Integration',
-            'Morpheus-Logo': 'assets/datadog-log.png',
+            'Morpheus-Logo': 'assets/datadog-logo.png',
             'Morpheus-Logo-Dark': 'assets/datadog-logo.png',
             'Morpheus-Labels': 'Plugin, Monitoring, DataDog',
             'Morpheus-Repo': 'https://github.com/martezr/morpheus-datadog-instance-tab-plugin',
