@@ -78,7 +78,7 @@ class DataDogTabPlugin extends Plugin {
 			name: 'Visible Tags',
 			code: 'datadog-plugin-tags-field',
 			fieldName: 'tagVisibilityField',
-			defaultValue: 'any',
+			defaultValue: 'datadog',
 			displayOrder: 3,
 			fieldLabel: 'Tags',
 			fieldGroup: 'Visibility Settings',

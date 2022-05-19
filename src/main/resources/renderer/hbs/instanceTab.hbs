@@ -17,12 +17,6 @@
                   <li>
                      <a href="https://app.datadoghq.com/infrastructure?tags=host%3A{{name}}" target="_blank">Open Dashboard</a>
                   </li>
-                  <li>
-                     <a href="/instances/workflowPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#workflow-instance-modal" class="instance-workflow-button" data-toggle="modal">Run Workflow</a>
-                  </li>
-                  <li>
-                     <a href="/instances/taskPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#task-instance-modal" class="instance-task-button" data-toggle="modal">Run Task</a>
-                  </li>
                </ul>
             </div>
          </div>
@@ -30,7 +24,7 @@
       <hr>
       <div class="incident-stats">
          <div class="type-logo">
-            <img src="{{asset "/datadog-logo.png"}}" alt="DataDog Logo" class="logo" onerror="loadImage(this);" onload="sizeImage(this)" style="max-height: 80px; max-width: 140px;">
+            <img src="{{asset "/datadog-logo.png"}}" alt="DataDog Logo" class="logo" style="max-height: 80px; max-width: 140px;">
          </div>
          <div class="stats-container big-stat-block">
             <span class="stat-content">{{name}}</span>
@@ -38,7 +32,7 @@
          </div>
          <div class="stats-container big-stat-block">
             {{#if status}}
-            <div title="Healthy" class="status-icon icon-health status-icon-center  status-healthy  "></div>
+            <div title="Healthy" class="status-icon icon-health status-icon-center  status-healthy"></div>
             <span class="stat-label">Status</span>
             {{else}}
             <span class="stat-content">{{status}}</span>
@@ -95,12 +89,6 @@
                <ul class="dropdown-menu">
                   <li>
                      <a href="https://app.datadoghq.com/infrastructure?tags=host%3A{{name}}" target="_blank">Open Dashboard</a>
-                  </li>
-                  <li>
-                     <a href="/instances/workflowPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#workflow-instance-modal" class="instance-workflow-button" data-toggle="modal">Run Workflow</a>
-                  </li>
-                  <li>
-                     <a href="/instances/taskPrompt/{{id}}" data-remote="true" data-method="PUT" data-target="#task-instance-modal" class="instance-task-button" data-toggle="modal">Run Task</a>
                   </li>
                </ul>
             </div>
@@ -201,7 +189,6 @@
 </div>
 
 <style>
-
 .badge {
 	background-color: #632CA6;
 }
@@ -222,6 +209,3 @@
   margin-bottom: 22px;
 }
 </style>
-
-<script src="{{asset "/vue.js"}}"></script>
-<script src="{{asset "/chart.js"}}"></script>

@@ -1,4 +1,12 @@
-## 0.0.2 Unreleased
+## 0.0.3 (May 18, 2022)
+
+CHANGES:
+
+* Added additional error handling to log when the API and Application key settings are not set
+* Added additional error handling to log when invalid credentials are used
+* Updated the default tag visibility setting from any to datadog
+
+## 0.0.2 (April 28, 2022)
 
 CHANGES:
 

@@ -53,103 +53,122 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 		// from the DataDog REST API
 		def HashMap<String, String> dataDogPayload = new HashMap<String, String>();
 
-        // Retrieve plugin settings
-		def settings = morpheus.getSettings(plugin)
-		def settingsOutput = ""
-		settings.subscribe(
-			{ outData -> 
-                 settingsOutput = outData
-        	},
-        	{ error ->
-                 println error.printStackTrace()
-        	}
-		)
+		try {
+			// Retrieve plugin settings
+			def settings = morpheus.getSettings(plugin)
+			def settingsOutput = ""
+			settings.subscribe(
+				{ outData -> 
+					settingsOutput = outData
+				},
+				{ error ->
+					println error.printStackTrace()
+				}
+			)
 
-		// Parse the plugin settings payload. The settings will be available as
-		// settingsJson.$optionTypeFieldName i.e. - settingsJson.ddApiKey to retrieve the DataDog API key setting
-		JsonSlurper slurper = new JsonSlurper()
-		def settingsJson = slurper.parseText(settingsOutput)
+			// Parse the plugin settings payload. The settings will be available as
+			// settingsJson.$optionTypeFieldName i.e. - settingsJson.ddApiKey to retrieve the DataDog API key setting
+			JsonSlurper slurper = new JsonSlurper()
+			def settingsJson = slurper.parseText(settingsOutput)
 
-		// Query the DataDog hosts REST API endpoint with a 
-		// host filter using the name of the Morpheus instance.
-		// The DataDog API endpoint expects headers of DD-APPLICATION-KEY
-		// and DD-API-KEY for authentication purposes. 
-		// The payload using the API and Application key from the plugin settings.
-		// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
-		def normalizedInstanceName = instance.name.toLowerCase()
-		def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${normalizedInstanceName}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
-
-		// Parse the JSON response payload returned
-		// from the REST API call.
-		def json = slurper.parseText(results.content)
-
-		// Evaluate whether the query returned a host.
-		// If the host was not found then render the HTML template
-		// for when a host isn't found
-		if (json.host_list.size == 0){
-			getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
-		} else {
-			// Store objects from the response payload
-			def baseHost = json.host_list[0]
-			def status = baseHost.up
-			def agentVersion = baseHost.meta.agent_version
-			log.info("DatDog agent checks: ${baseHost.meta.agent_checks}")
-			def checks = 0
-			if (baseHost.meta.agent_checks == null){
-			  checks = 0
-			} else {
-			  checks = baseHost.meta.agent_checks.size
-			}
-			def agentChecks = baseHost.meta.agent_checks
-			def apps = baseHost.apps
-
-			// Parse the gohai data JSON payload.
-			// This step is necessary because there is
-			// a JSON payload embedded in the original response
-			// as a string which needs to be parsed.
-			def gohaidata = slurper.parseText(baseHost.meta.gohai)
-			def cpuCores = gohaidata.cpu.cpu_cores
-			def logicalProcessors = gohaidata.cpu.cpu_logical_processors
-			def memory = gohaidata.memory.total
-			def operatingSystem = gohaidata.platform.os
-			def cpuDetails = gohaidata.cpu
-			def platformDetails = gohaidata.platform
-			def memoryDetails = gohaidata.memory
-
-			// Evaluate if the DataDog host mute status is true or false
-			// and pass muted or unmuted instead of true or false to the html template
-			def muteStatus = ""
-			if (baseHost.is_muted == true){
-				muteStatus = "muted"
-			} else {
-				muteStatus = "unmuted"
+			// Check if the API and Application keys have been set for the plugin
+			if (settingsJson.ddApiKey == "" || settingsJson.ddAppKey == ""){
+				log.info("DataDog Plugin: DataDog API credentials are not set. Ensure that the plugin settings have been configured.")
+				return getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
 			}
 
-			// Set the values of the HashMap object (defined on line #51)
-			// that will be used to populate the HTML template
-			dataDogPayload.put("id", instance.id)
-			dataDogPayload.put("name", normalizedInstanceName)
-			dataDogPayload.put("apps", apps)
-			dataDogPayload.put("muteStatus", muteStatus)
-			dataDogPayload.put("agentVersion", agentVersion)
-			dataDogPayload.put("checks", checks)
-			dataDogPayload.put("agentChecks", agentChecks)
-			dataDogPayload.put("status", status)
-			dataDogPayload.put("cpuCores", cpuCores)
-			dataDogPayload.put("logicalProcessors", logicalProcessors)
-			dataDogPayload.put("operatingSystem", operatingSystem)
-			dataDogPayload.put("memory", memory)
-			dataDogPayload.put("platformDetails", platformDetails)
-			dataDogPayload.put("cpuDetails", cpuDetails)
-			dataDogPayload.put("memoryDetails", memoryDetails)
+			// Query the DataDog hosts REST API endpoint with a 
+			// host filter using the name of the Morpheus instance.
+			// The DataDog API endpoint expects headers of DD-APPLICATION-KEY
+			// and DD-API-KEY for authentication purposes. 
+			// The payload using the API and Application key from the plugin settings.
+			// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
+			def normalizedInstanceName = instance.name.toLowerCase()
+			def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${normalizedInstanceName}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 
-			// Set the value of the model object to the HashMap object
-			model.object = dataDogPayload
+			// Check if the API and Application keys have been set for the plugin
+			if (results.success == false){
+				log.info("DataDog Plugin: Error making the REST API call ${results.errorCode}")
+				return getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
+			}
 
-			// Render the HTML template located in 
-			// resources/renderer/hbs/instanceTab.hbs
-			getRenderer().renderTemplate("hbs/instanceTab", model)
+			// Parse the JSON response payload returned
+			// from the REST API call.
+			def json = slurper.parseText(results.content)
+
+			// Evaluate whether the query returned a host.
+			// If the host was not found then render the HTML template
+			// for when a host isn't found
+			if (json.total_returned == 0){
+				getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
+			} else {
+				// Store objects from the response payload
+				def baseHost = json.host_list[0]
+				def status = baseHost.up
+				def agentVersion = baseHost.meta.agent_version
+				log.info("DatDog agent checks: ${baseHost.meta.agent_checks}")
+				def checks = 0
+				if (baseHost.meta.agent_checks == null){
+				  checks = 0
+				} else {
+				  checks = baseHost.meta.agent_checks.size
+				}
+				def agentChecks = baseHost.meta.agent_checks
+				def apps = baseHost.apps
+
+				// Parse the gohai data JSON payload.
+				// This step is necessary because there is
+				// a JSON payload embedded in the original response
+				// as a string which needs to be parsed.
+				def gohaidata = slurper.parseText(baseHost.meta.gohai)
+				def cpuCores = gohaidata.cpu.cpu_cores
+				def logicalProcessors = gohaidata.cpu.cpu_logical_processors
+				def memory = gohaidata.memory.total
+				def operatingSystem = gohaidata.platform.os
+				def cpuDetails = gohaidata.cpu
+				def platformDetails = gohaidata.platform
+				def memoryDetails = gohaidata.memory
+
+				// Evaluate if the DataDog host mute status is true or false
+				// and pass muted or unmuted instead of true or false to the html template
+				def muteStatus = ""
+				if (baseHost.is_muted == true){
+					muteStatus = "muted"
+				} else {
+					muteStatus = "unmuted"
+				}
+
+				// Set the values of the HashMap object (defined on line #51)
+				// that will be used to populate the HTML template
+				dataDogPayload.put("id", instance.id)
+				dataDogPayload.put("name", normalizedInstanceName)
+				dataDogPayload.put("apps", apps)
+				dataDogPayload.put("muteStatus", muteStatus)
+				dataDogPayload.put("agentVersion", agentVersion)
+				dataDogPayload.put("checks", checks)
+				dataDogPayload.put("agentChecks", agentChecks)
+				dataDogPayload.put("status", status)
+				dataDogPayload.put("cpuCores", cpuCores)
+				dataDogPayload.put("logicalProcessors", logicalProcessors)
+				dataDogPayload.put("operatingSystem", operatingSystem)
+				dataDogPayload.put("memory", memory)
+				dataDogPayload.put("platformDetails", platformDetails)
+				dataDogPayload.put("cpuDetails", cpuDetails)
+				dataDogPayload.put("memoryDetails", memoryDetails)
+
+				// Set the value of the model object to the HashMap object
+				model.object = dataDogPayload
+
+				// Render the HTML template located in 
+				// resources/renderer/hbs/instanceTab.hbs
+				getRenderer().renderTemplate("hbs/instanceTab", model)
+			}
 		}
+		catch(Exception ex) {
+          	println "DataDog Plugin: Error in fetching data from DataDog"
+		  	getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
+        }
+		
 	}
 
 
@@ -257,14 +276,11 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			//log.info("Show status: ${show}")
 		}
 		catch(Exception ex) {
-          log.info("Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured.")
+          log.info("DataDog Plugin: Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured.")
         }
 		return show
 	}
-	/**
-	 * Allows various sources used in the template to be loaded
-	 * @return
-	 */
+
 	@Override
 	ContentSecurityPolicy getContentSecurityPolicy() {
 		def csp = new ContentSecurityPolicy()
