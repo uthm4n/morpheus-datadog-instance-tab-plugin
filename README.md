@@ -26,7 +26,8 @@ The following settings are available for the DataDog plugin:
 
 |Setting|Description|Required|Default|
 |---|---|---|---|
-|API Key |The generated DataDog API key used to authenticate to the DataDog REST API |  Yes |n/a |
+| API Endpoint | The API endpoint used for fetching instance data | No | Public (datadoghq.com) |
+| API Key |The generated DataDog API key used to authenticate to the DataDog REST API |  Yes |n/a |
 | Application Key | The generated DataDog Application key used to authenticate to the DataDog REST API | Yes |n/a |
 | Environments | This toggles the visibility of the tab based upon the Morpheus environment the instance is in. Multiple environments are supported by adding multiple comma separated environments in the text box.| No| any|
 | Groups | This toggles the visibility of the tab based upon the Morpheus group the instance is in. Multiple groups are supported by adding multiple comma separated groups in the text box.| No|any |
