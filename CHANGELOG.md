@@ -1,3 +1,9 @@
+## 0.0.4 (November 30, 2022)
+
+CHANGES:
+
+* Added a plugin setting for toggling between public (datadoghq.com) and govcloud (ddog-gov.com) API endpoints.
+
 ## 0.0.3 (May 18, 2022)
 
 CHANGES:

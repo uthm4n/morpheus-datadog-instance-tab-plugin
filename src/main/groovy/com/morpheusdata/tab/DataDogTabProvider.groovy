@@ -84,7 +84,8 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			// The payload using the API and Application key from the plugin settings.
 			// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
 			def normalizedInstanceName = instance.name.toLowerCase()
-			def results = dataDogAPI.callApi("https://api.datadoghq.com", "api/v1/hosts?filter=host:${normalizedInstanceName}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
+			def apiURL = "https://api.${settingsJson.ddApiEndpoint}"
+			def results = dataDogAPI.callApi(apiURL, "api/v1/hosts?filter=host:${normalizedInstanceName}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 
 			// Check if the API and Application keys have been set for the plugin
 			if (results.success == false){
@@ -106,7 +107,6 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				def baseHost = json.host_list[0]
 				def status = baseHost.up
 				def agentVersion = baseHost.meta.agent_version
-				log.info("DatDog agent checks: ${baseHost.meta.agent_checks}")
 				def checks = 0
 				if (baseHost.meta.agent_checks == null){
 				  checks = 0
@@ -155,6 +155,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				dataDogPayload.put("platformDetails", platformDetails)
 				dataDogPayload.put("cpuDetails", cpuDetails)
 				dataDogPayload.put("memoryDetails", memoryDetails)
+				dataDogPayload.put("apiEndpoint", settingsJson.ddApiEndpoint)
 
 				// Set the value of the model object to the HashMap object
 				model.object = dataDogPayload
@@ -269,11 +270,6 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			){
 				show = true
 			}
-			//log.info("Permission status: ${permissionStatus}")
-			//log.info("Environment status: ${environmentStatus}")
-			//log.info("Group status: ${groupStatus}")
-			//log.info("Tag status: ${tagStatus}")
-			//log.info("Show status: ${show}")
 		}
 		catch(Exception ex) {
           log.info("DataDog Plugin: Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured.")

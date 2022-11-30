@@ -18,6 +18,9 @@ class DataDogTabPlugin extends Plugin {
 	void initialize() {
 		DataDogTabProvider dataDogTabProvider = new DataDogTabProvider(this, morpheus)
 		this.pluginProviders.put(dataDogTabProvider.code, dataDogTabProvider)
+		def optionSourceProvider = new DataDogAPIEndpointOptionSourceProvider(this, morpheus)
+        this.pluginProviders.put(optionSourceProvider.code, optionSourceProvider)
+
 		this.setName("DataDog Tab Plugin")
 		this.setDescription("Instance tab plugin displaying DataDog data")
 		this.setAuthor("Martez Reed")
@@ -27,10 +30,23 @@ class DataDogTabPlugin extends Plugin {
 		// Plugin settings the are used to configure the behavior of the plugin
 		// https://developer.morpheusdata.com/api/com/morpheusdata/model/OptionType.html
 		this.settings << new OptionType(
+			name: 'API Endpoint',
+			code: 'datadog-plugin-api-endpoint',
+			fieldName: 'ddApiEndpoint',
+			optionSource: 'datadogApiEndpoints',
+			defaultValue: 'datadoghq.com',
+			displayOrder: 0,
+			fieldLabel: 'API Endpoint',
+			helpText: 'The DataDog API endpoint',
+			required: true,
+			inputType: OptionType.InputType.SELECT
+		)
+
+		this.settings << new OptionType(
 			name: 'API Key',
 			code: 'datadog-plugin-api-key',
 			fieldName: 'ddApiKey',
-			displayOrder: 0,
+			displayOrder: 1,
 			fieldLabel: 'API Key',
 			helpText: 'The DataDog API key',
 			required: true,
@@ -41,7 +57,7 @@ class DataDogTabPlugin extends Plugin {
 			name: 'Application Key',
 			code: 'datadog-plugin-application-key',
 			fieldName: 'ddAppKey',
-			displayOrder: 1,
+			displayOrder: 2,
 			fieldLabel: 'Application Key',
 			helpText: 'The DataDog Application key',
 			required: true,
@@ -53,7 +69,7 @@ class DataDogTabPlugin extends Plugin {
 			code: 'datadog-plugin-environments-field',
 			fieldName: 'environmentVisibilityField',
 			defaultValue: 'any',
-			displayOrder: 2,
+			displayOrder: 3,
 			fieldLabel: 'Environments',
 			fieldGroup: 'Visibility Settings',
 			helpText: 'List of the names of the Morpheus environments the tab is visible (i.e. - production,qa,dev)',
@@ -66,7 +82,7 @@ class DataDogTabPlugin extends Plugin {
 			code: 'datadog-plugin-groups-field',
 			fieldName: 'groupVisibilityField',
 			defaultValue: 'any',
-			displayOrder: 3,
+			displayOrder: 4,
 			fieldLabel: 'Groups',
 			fieldGroup: 'Visibility Settings',
 			helpText: 'List of the names of the Morpheus groups the tab is visible (i.e. - devs,admins,security)',
@@ -79,7 +95,7 @@ class DataDogTabPlugin extends Plugin {
 			code: 'datadog-plugin-tags-field',
 			fieldName: 'tagVisibilityField',
 			defaultValue: 'datadog',
-			displayOrder: 3,
+			displayOrder: 5,
 			fieldLabel: 'Tags',
 			fieldGroup: 'Visibility Settings',
 			helpText: 'List of the names of the Morpheus tags the tab is visible (i.e. - datadog,monitoring,observability)',
