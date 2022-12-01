@@ -84,7 +84,13 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			// The payload using the API and Application key from the plugin settings.
 			// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
 			def normalizedInstanceName = instance.name.toLowerCase()
-			def apiURL = "https://api.${settingsJson.ddApiEndpoint}"
+			def apiURL
+			if (settingsJson.ddApiEndpoint) {
+				apiURL = "https://api.ddog-gov.com"
+			} else {
+				apiURL = "https://api.datadoghq.com"
+			}
+			log.info("DataDog Plugin: API endpoint ${apiURL}")
 			def results = dataDogAPI.callApi(apiURL, "api/v1/hosts?filter=host:${normalizedInstanceName}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 
 			// Check if the API and Application keys have been set for the plugin
