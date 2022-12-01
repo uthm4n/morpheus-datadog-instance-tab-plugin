@@ -1,3 +1,9 @@
+## 0.0.5 (December 1, 2022)
+
+CHANGES:
+
+* Fixed a bug with the API endpoints option list causing a 500 error to be thrown when the plugin is marked as disabled. The select list for the API endpoint has been migrated to an optional checkbox for the GovCloud API endpoint.
+
 ## 0.0.4 (November 30, 2022)
 
 CHANGES:

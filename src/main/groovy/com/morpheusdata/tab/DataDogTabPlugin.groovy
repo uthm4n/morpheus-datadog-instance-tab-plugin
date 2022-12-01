@@ -18,9 +18,6 @@ class DataDogTabPlugin extends Plugin {
 	void initialize() {
 		DataDogTabProvider dataDogTabProvider = new DataDogTabProvider(this, morpheus)
 		this.pluginProviders.put(dataDogTabProvider.code, dataDogTabProvider)
-		def optionSourceProvider = new DataDogAPIEndpointOptionSourceProvider(this, morpheus)
-        this.pluginProviders.put(optionSourceProvider.code, optionSourceProvider)
-
 		this.setName("DataDog Tab Plugin")
 		this.setDescription("Instance tab plugin displaying DataDog data")
 		this.setAuthor("Martez Reed")
@@ -33,13 +30,11 @@ class DataDogTabPlugin extends Plugin {
 			name: 'API Endpoint',
 			code: 'datadog-plugin-api-endpoint',
 			fieldName: 'ddApiEndpoint',
-			optionSource: 'datadogApiEndpoints',
-			defaultValue: 'datadoghq.com',
 			displayOrder: 0,
-			fieldLabel: 'API Endpoint',
-			helpText: 'The DataDog API endpoint',
-			required: true,
-			inputType: OptionType.InputType.SELECT
+			fieldLabel: 'Use GovCloud API Endpoint',
+			helpText: 'Whether to use the GovCloud API endpoint (ddog-gov.com)',
+			required: false,
+			inputType: OptionType.InputType.CHECKBOX
 		)
 
 		this.settings << new OptionType(
