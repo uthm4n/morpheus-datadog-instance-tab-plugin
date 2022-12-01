@@ -85,10 +85,13 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
 			def normalizedInstanceName = instance.name.toLowerCase()
 			def apiURL
+			def appURL
 			if (settingsJson.ddApiEndpoint) {
 				apiURL = "https://api.ddog-gov.com"
+				appURL = "https://app.ddog-gov.com"
 			} else {
 				apiURL = "https://api.datadoghq.com"
+				appURL = "https://app.datadoghq.com"
 			}
 			log.info("DataDog Plugin: API endpoint ${apiURL}")
 			def results = dataDogAPI.callApi(apiURL, "api/v1/hosts?filter=host:${normalizedInstanceName}", "", "", new RestApiUtil.RestOptions(headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
@@ -161,7 +164,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				dataDogPayload.put("platformDetails", platformDetails)
 				dataDogPayload.put("cpuDetails", cpuDetails)
 				dataDogPayload.put("memoryDetails", memoryDetails)
-				dataDogPayload.put("apiEndpoint", settingsJson.ddApiEndpoint)
+				dataDogPayload.put("appUrl", appURL)
 
 				// Set the value of the model object to the HashMap object
 				model.object = dataDogPayload
