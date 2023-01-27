@@ -1,3 +1,10 @@
+## 0.0.6 (Janurary 27, 2023)
+
+CHANGES:
+
+* Added support for additional DataDog API endpoints outside of US-1 and Government.
+* Added additional logging to better troubleshoot host not found issues.
+
 ## 0.0.5 (December 1, 2022)
 
 CHANGES:

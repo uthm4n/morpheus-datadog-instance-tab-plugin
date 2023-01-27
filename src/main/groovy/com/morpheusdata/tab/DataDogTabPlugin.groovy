@@ -30,11 +30,12 @@ class DataDogTabPlugin extends Plugin {
 			name: 'API Endpoint',
 			code: 'datadog-plugin-api-endpoint',
 			fieldName: 'ddApiEndpoint',
+			defaultValue: 'datadoghq.com',
 			displayOrder: 0,
-			fieldLabel: 'Use GovCloud API Endpoint',
-			helpText: 'Whether to use the GovCloud API endpoint (ddog-gov.com)',
+			fieldLabel: 'DataDog API Endpoint',
+			helpText: 'The DataDog site API endpoint (https://docs.datadoghq.com/getting_started/site/#access-the-datadog-site)',
 			required: false,
-			inputType: OptionType.InputType.CHECKBOX
+			inputType: OptionType.InputType.TEXT
 		)
 
 		this.settings << new OptionType(
@@ -96,6 +97,18 @@ class DataDogTabPlugin extends Plugin {
 			helpText: 'List of the names of the Morpheus tags the tab is visible (i.e. - datadog,monitoring,observability)',
 			required: false,
 			inputType: OptionType.InputType.TEXT
+		)
+
+		this.settings << new OptionType(
+			name: 'Plugin Customization',
+			code: 'datadog-plugin-customization-field',
+			fieldName: 'ddPluginCustomization',
+			defaultValue: '',
+			displayOrder: 6,
+			fieldLabel: 'Plugin Customization',
+			helpText: 'Custom plugin settings (Future Use Only)',
+			required: false,
+			inputType: OptionType.InputType.TEXTAREA
 		)
 	}
 
