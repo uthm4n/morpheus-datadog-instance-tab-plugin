@@ -1,3 +1,9 @@
+## 0.0.8 (Janurary 31, 2023)
+
+CHANGES:
+
+* Fix an issue where an instance with no labels created an issue with the visibility logic.
+
 ## 0.0.7 (Janurary 31, 2023)
 
 CHANGES:

@@ -313,9 +313,14 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			}
 
 			def labels = instance.tags
-			for(label in visibleLabels){
-				if(labels.contains(label)){
-					labelStatus = true
+			if (labels != null){
+				ArrayList<String> labelArray = new  ArrayList<String>(Arrays.asList(labels.split(",")));
+				if (labelArray.size > 0) {
+					for(label in visibleLabels){
+						if(labelArray.contains(label)){
+							labelStatus = true
+						}
+					}
 				}
 			}
 
