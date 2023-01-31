@@ -103,7 +103,7 @@ class DataDogTabPlugin extends Plugin {
 			name: 'Visible Labels',
 			code: 'datadog-plugin-labels-field',
 			fieldName: 'labelVisibilityField',
-			defaultValue: 'datadog',
+			defaultValue: 'any',
 			displayOrder: 6,
 			fieldLabel: 'Labels',
 			fieldGroup: 'Visibility Settings',
