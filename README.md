@@ -32,6 +32,33 @@ The following settings are available for the DataDog plugin:
 | Environments | This toggles the visibility of the tab based upon the Morpheus environment the instance is in. Multiple environments are supported by adding multiple comma separated environments in the text box.| No| any|
 | Groups | This toggles the visibility of the tab based upon the Morpheus group the instance is in. Multiple groups are supported by adding multiple comma separated groups in the text box.| No|any |
 | Tags | This toggles the visibility of the tab based upon the tag(s) assigned to the instance. The tag key is what is used for the evaluation. Multiple tags are supported by adding multiple comma separated tags in the text box.|No| datadog |
+| Labels | This toggles the visibility of the tab based upon the label(s) assigned to the instance. Multiple labels are supported by adding multiple comma separated labels in the text box.|No| any |
+
+#### Custom Settings
+
+The plugin supports additional customization through the `PLUGIN CUSTOMIZATION` text field. A YAML payload is expected with defining the hostname configuration as the only supported configuration at this time.
+
+**Query By Environment Variable**
+
+Configure the plugin to search for the instance in DataDog using the name provided in the value of the `DATADOG_INSTANCE_NAME` environment variable.
+
+```
+---
+instanceName:
+  property: evar
+  value: DATADOG_INSTANCE_NAME
+```
+
+**Query By Tag**
+
+Configure the plugin to search for the instance in DataDog using the name provided in the value of the `datadogName` tag.
+
+```
+---
+instanceName:
+  property: tag
+  value: datadogName
+```
 
 ### Permissions
 

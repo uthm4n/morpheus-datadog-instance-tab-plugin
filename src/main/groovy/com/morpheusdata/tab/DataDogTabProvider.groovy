@@ -16,6 +16,7 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 import io.reactivex.Single
 import groovy.util.logging.Slf4j
+import org.yaml.snakeyaml.*
 
 @Slf4j
 class DataDogTabProvider extends AbstractInstanceTabProvider {
@@ -41,8 +42,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 	@Override
 	HTMLResponse renderTemplate(Instance instance) {
 
-		// Instantiate an object for storing data
-		// passed to the html template
+		// Instantiate an object for storing data passed to the html template
 		ViewModel<Instance> model = new ViewModel<>()
 		
 		// Retrieve additional details about the instance
@@ -67,7 +67,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 
 			// Parse the plugin settings payload. The settings will be available as
 			// settingsJson.$optionTypeFieldName i.e. - settingsJson.ddApiKey to retrieve the DataDog API key setting
-			log.info("DataDog Plugin: Parsing Settings JSON.")
+			log.info("DataDog Plugin: Parsing Settings JSON")
 			JsonSlurper slurper = new JsonSlurper()
 			def settingsJson = slurper.parseText(settingsOutput)
 
@@ -84,49 +84,63 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				return getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
 			}
 
-			// TODO: Check for invalid JSON payload
-			//def customSettings = slurper.parseText(settingsJson.ddPluginCustomization)
+			// Parse the custom settings
+			Yaml yaml = new Yaml();
+			Map<String, Object> obj = yaml.load(settingsJson.ddPluginCustomization);
 
-			// Default to the Morpheus instance name (DONE)
-			// Second to the tag associated with the instance
-			// Third to the identifier defined in the custom settings
+			// Primary to a tag associated with the instance
+			// Secondary to an evironment variable associated with the instance
+			// Default to the Morpheus instance name
+			def normalizedInstanceName = ""
 
-			def normalizedInstanceName
-			/*
-			if else {
-				info.log("DataDog Plugin: Setting ")
+			if (obj != null){
+				def nameSelector = obj.instanceName.property
 
-			} else {
-				info.log("DataDog Plugin: Setting ")
-				normalizedInstanceName = instance.name.toLowerCase()
+				// Set the hostname to query the DataDog API
+				// using a defined tag
+				def tags = instanceDetails.instance.metadata
+				if(nameSelector == "tag"){
+					if(tags.containsKey(obj.instanceName.value)){
+						normalizedInstanceName = tags[obj.instanceName.value]
+						log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to the tag ${obj.instanceName.value}")
+					}		
+				}
+
+				// Set the hostname to query the DataDog API
+				// using a defined evironment variable
+				def evars = instanceDetails.instance.evars
+				if (nameSelector == "evar"){
+					normalizedInstanceName = evars[obj.instanceName.value]
+					log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to the evar ${obj.instanceName.value}")
+				}
 			}
-			*/
-			normalizedInstanceName = instance.name.toLowerCase()
+
+			if (normalizedInstanceName == "") {
+		        normalizedInstanceName = instance.name.toLowerCase()
+			    log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to no additional settings being defined")
+			}
 
 			// Query the DataDog hosts REST API endpoint with a 
 			// host filter using the name of the Morpheus instance.
-			// The DataDog API endpoint expects headers of DD-APPLICATION-KEY
-			// and DD-API-KEY for authentication purposes. 
+			// The DataDog API endpoint expects headers of DD-APPLICATION-KEY and DD-API-KEY for authentication purposes. 
 			// The payload using the API and Application key from the plugin settings.
 			// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
 			def apiURL = "https://api.${settingsJson.ddApiEndpoint}"
 			def appURL = "https://app.${settingsJson.ddApiEndpoint}"
 
 			log.info("DataDog Plugin: Configured API endpoint ${apiURL}")
-			def results = dataDogAPI.callApi(apiURL, "api/v1/hosts", "", "", new RestApiUtil.RestOptions(queryParams:['filter=host':normalizedInstanceName],headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
+			def results = dataDogAPI.callApi(apiURL, "api/v1/hosts", "", "", new RestApiUtil.RestOptions(queryParams:['filter':normalizedInstanceName],headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 
 			if (results.success == false){
 				log.info("DataDog Plugin: Error making the REST API call ${results.errorCode}")
 				return getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
 			}
 
-			// Parse the JSON response payload returned
-			// from the REST API call.
+			// Parse the JSON response payload returned from the REST API call.
 			def json = slurper.parseText(results.content)
 
 			// Evaluate whether the query returned a host.
-			// If the host was not found then render the HTML template
-			// for when a host isn't found
+			// If the host was not found then render the HTML template for when a host isn't found.
 			if (json.total_returned == 0){
 				getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
 			} else {
@@ -196,7 +210,6 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
           	log.error("DataDog Plugin: Error in fetching data from DataDog ${ex}")
 		  	getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
         }
-		
 	}
 
 
@@ -224,9 +237,6 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 
 			// Retrieve additional details about the instance
 			TaskConfig config = morpheus.buildInstanceConfig(instance, [:], null, [], [:]).blockingGet()
-			//println "instance details ${config.instance.createdByUsername}"
-			//println "customOptions ${config.customOptions}"
-			//println "instance cloud ID ${instance.provisionZoneId}"
 
 			// Only display the tab if the user
 			// accessing the instance has the correct permission
@@ -287,17 +297,37 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 					tagStatus = true
 				}
 			}
+	
+			// Only display the tab if the instance
+			// has a label in the defined labels or any is specified.
+			// The label names should be provided in a comma seperated list
+			// and we iterate through the list to remove any leading and trailing whitespaces
+			def tabLabels = settingsJson.labelVisibilityField.split(",");
+			def visibleLabels = []
+			for(label in tabLabels){
+				visibleLabels.add(label.trim())
+			}
+			def labelStatus = false
+			if(visibleLabels.contains("any")){
+				labelStatus = true
+			}
 
-			// Only display the tab if the all
-			// of the previous evaluations are true
+			def labels = instance.tags
+			for(label in visibleLabels){
+				if(labels.contains(label)){
+					labelStatus = true
+				}
+			}
+
+			// Only display the tab if the all of the previous evaluations are true
 			if(permissionStatus == true && environmentStatus == true &&
-			   tagStatus == true && groupStatus == true
+			   tagStatus == true && groupStatus == true && labelStatus == true
 			){
 				show = true
 			}
 		}
 		catch(Exception ex) {
-          log.info("DataDog Plugin: Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured.")
+          log.info("DataDog Plugin: Error parsing the DataDog plugin settings. Ensure that the plugin settings have been configured. ${ex}")
         }
 		return show
 	}

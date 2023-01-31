@@ -1,3 +1,10 @@
+## 0.0.7 (Janurary 31, 2023)
+
+CHANGES:
+
+* Added support for determining the tab's visibility based on instance labels.
+* Added support for setting the hostname used to query the DataDog API based upon a tag or label.
+
 ## 0.0.6 (Janurary 27, 2023)
 
 CHANGES:

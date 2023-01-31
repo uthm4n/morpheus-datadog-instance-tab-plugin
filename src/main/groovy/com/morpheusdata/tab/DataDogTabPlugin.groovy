@@ -100,13 +100,26 @@ class DataDogTabPlugin extends Plugin {
 		)
 
 		this.settings << new OptionType(
+			name: 'Visible Labels',
+			code: 'datadog-plugin-labels-field',
+			fieldName: 'labelVisibilityField',
+			defaultValue: 'datadog',
+			displayOrder: 6,
+			fieldLabel: 'Labels',
+			fieldGroup: 'Visibility Settings',
+			helpText: 'Comma separated list of Morpheus labels for tab visibility (i.e. - datadog,monitoring,observability)',
+			required: false,
+			inputType: OptionType.InputType.TEXT
+		)
+
+		this.settings << new OptionType(
 			name: 'Plugin Customization',
 			code: 'datadog-plugin-customization-field',
 			fieldName: 'ddPluginCustomization',
-			defaultValue: '',
-			displayOrder: 6,
+			defaultValue: '---\ninstanceName:\n  property: tag\n  value: datadogName',
+			displayOrder: 7,
 			fieldLabel: 'Plugin Customization',
-			helpText: 'Custom plugin settings (Future Use Only)',
+			helpText: 'Custom plugin settings',
 			required: false,
 			inputType: OptionType.InputType.TEXTAREA
 		)
