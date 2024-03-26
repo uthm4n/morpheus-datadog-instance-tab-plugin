@@ -78,7 +78,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			}
 
 			// Check if the API endpoint provided is valid
-			def apiEndpoints = ["datadoghq.com", "us3.datadoghq.com", "us5.datadoghq.com", "datadoghq.eu","ddog-gov.com"]
+			def apiEndpoints = ["datadoghq.com", "us3.datadoghq.com", "us5.datadoghq.com", "datadoghq.eu","ddog-gov.com","ap1.datadoghq.com"]
 			if (!apiEndpoints.contains(settingsJson.ddApiEndpoint)){
 				log.info("DataDog Plugin: The configured endpoint of ${settingsJson.ddApiEndpoint} is not one of the valid endpoints - ${apiEndpoints}.")
 				return getRenderer().renderTemplate("hbs/instanceNotFoundTab", model)
@@ -94,24 +94,26 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			def normalizedInstanceName = ""
 
 			if (obj != null){
-				def nameSelector = obj.instanceName.property
+				if (obj.instanceName != null){
+					def nameSelector = obj.instanceName.property
 
-				// Set the hostname to query the DataDog API
-				// using a defined tag
-				def tags = instanceDetails.instance.metadata
-				if(nameSelector == "tag"){
-					if(tags.containsKey(obj.instanceName.value)){
-						normalizedInstanceName = tags[obj.instanceName.value]
-						log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to the tag ${obj.instanceName.value}")
-					}		
-				}
+					// Set the hostname to query the DataDog API
+					// using a defined tag
+					def tags = instanceDetails.instance.metadata
+					if(nameSelector == "tag"){
+						if(tags.containsKey(obj.instanceName.value)){
+							normalizedInstanceName = tags[obj.instanceName.value]
+							log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to the tag ${obj.instanceName.value}")
+						}
+					}
 
-				// Set the hostname to query the DataDog API
-				// using a defined evironment variable
-				def evars = instanceDetails.instance.evars
-				if (nameSelector == "evar"){
-					normalizedInstanceName = evars[obj.instanceName.value]
-					log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to the evar ${obj.instanceName.value}")
+					// Set the hostname to query the DataDog API
+					// using a defined evironment variable
+					def evars = instanceDetails.instance.evars
+					if (nameSelector == "evar"){
+						normalizedInstanceName = evars[obj.instanceName.value]
+						log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to the evar ${obj.instanceName.value}")
+					}
 				}
 			}
 
@@ -120,15 +122,29 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			    log.info("DataDog Plugin: Using ${normalizedInstanceName} as the DataDog hostname due to no additional settings being defined")
 			}
 
+			def appSubdomain = "app"
+
+			if (obj != null){
+				if (obj.tenantMetadata != null){
+					def tenantMetadata = obj.tenantMetadata
+					for(tenant in tenantMetadata){
+						if (tenant["name"].toLowerCase() == instance.account.name.toLowerCase()){
+							appSubdomain = tenant["dataDogSubdomain"]
+						}
+					}
+				}
+			}
+
 			// Query the DataDog hosts REST API endpoint with a 
 			// host filter using the name of the Morpheus instance.
 			// The DataDog API endpoint expects headers of DD-APPLICATION-KEY and DD-API-KEY for authentication purposes. 
 			// The payload using the API and Application key from the plugin settings.
 			// https://docs.datadoghq.com/api/latest/hosts/#get-all-hosts-for-your-organization
 			def apiURL = "https://api.${settingsJson.ddApiEndpoint}"
-			def appURL = "https://app.${settingsJson.ddApiEndpoint}"
+			def appURL = "https://${appSubdomain}.${settingsJson.ddApiEndpoint}"
 
 			log.info("DataDog Plugin: Configured API endpoint ${apiURL}")
+			log.info("DataDog Plugin: Configured App endpoint ${appURL}")
 			def results = dataDogAPI.callApi(apiURL, "api/v1/hosts", "", "", new RestApiUtil.RestOptions(queryParams:['filter':normalizedInstanceName],headers:['Content-Type':'application/json','DD-API-KEY':settingsJson.ddApiKey,'DD-APPLICATION-KEY':settingsJson.ddAppKey], ignoreSSL: false), 'GET')
 
 			if (results.success == false){

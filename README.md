@@ -29,6 +29,7 @@ The following settings are available for the DataDog plugin:
 | API Endpoint | The API endpoint used for fetching instance data | No | Public (datadoghq.com) |
 | API Key |The generated DataDog API key used to authenticate to the DataDog REST API |  Yes |n/a |
 | Application Key | The generated DataDog Application key used to authenticate to the DataDog REST API | Yes |n/a |
+| [Plugin Customization](#custom-settings) |The plugin customization field supports a custom YAML payload for configuring additional plugin settings.| No |n/a|
 | Environments | This toggles the visibility of the tab based upon the Morpheus environment the instance is in. Multiple environments are supported by adding multiple comma separated environments in the text box.| No| any|
 | Groups | This toggles the visibility of the tab based upon the Morpheus group the instance is in. Multiple groups are supported by adding multiple comma separated groups in the text box.| No|any |
 | Tags | This toggles the visibility of the tab based upon the tag(s) assigned to the instance. The tag key is what is used for the evaluation. Multiple tags are supported by adding multiple comma separated tags in the text box.|No| datadog |
@@ -36,9 +37,9 @@ The following settings are available for the DataDog plugin:
 
 #### Custom Settings
 
-The plugin supports additional customization through the `PLUGIN CUSTOMIZATION` text field. A YAML payload is expected with defining the hostname configuration as the only supported configuration at this time.
+The plugin supports additional customization through the `PLUGIN CUSTOMIZATION` text field. A YAML payload is expected.
 
-**Query By Environment Variable**
+**Query DataDog Instance Using an Environment Variable**
 
 Configure the plugin to search for the instance in DataDog using the name provided in the value of the `DATADOG_INSTANCE_NAME` environment variable.
 
@@ -49,7 +50,7 @@ instanceName:
   value: DATADOG_INSTANCE_NAME
 ```
 
-**Query By Tag**
+**Query DataDog Instance Using a Tag**
 
 Configure the plugin to search for the instance in DataDog using the name provided in the value of the `datadogName` tag.
 
@@ -58,6 +59,21 @@ Configure the plugin to search for the instance in DataDog using the name provid
 instanceName:
   property: tag
   value: datadogName
+```
+
+**Morpheus Subtenant Configuration**
+
+DataDog supports multitenancy or multiple-organization accounts (https://docs.datadoghq.com/account_management/multi_organization/) to enable large organizations or service providers to effectively manage multiple subaccounts. This section of the plugin configuration supports use cases where additional configuration needs to be added to Morpheus subtenants in order to align with the use of a DataDog organization per Morpheus subtenant.
+
+```
+---
+tenantMetadata:
+  - name: "morpheus"
+    dataDogSubdomain: morpheus
+  - name: "customer A"
+    dataDogSubdomain: test
+  - name: "customer B"
+    dataDogSubdomain: testB
 ```
 
 ### Permissions

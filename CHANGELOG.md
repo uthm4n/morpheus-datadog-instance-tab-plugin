@@ -1,3 +1,12 @@
+## UNRELEASED
+
+## 0.0.9 (March 26, 2024)
+
+CHANGES:
+
+* Add support for configuring the plugin to integrate with DatDog multiple-organization accounts using the plugin customization field.
+* Add support for the Asia Pacific API endpoint (ap1.datadoghq.com) as an available endpoint option.
+
 ## 0.0.8 (Janurary 31, 2023)
 
 CHANGES:

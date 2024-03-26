@@ -116,7 +116,6 @@ class DataDogTabPlugin extends Plugin {
 			name: 'Plugin Customization',
 			code: 'datadog-plugin-customization-field',
 			fieldName: 'ddPluginCustomization',
-			defaultValue: '---\ninstanceName:\n  property: tag\n  value: datadogName',
 			displayOrder: 7,
 			fieldLabel: 'Plugin Customization',
 			helpText: 'Custom plugin settings',
