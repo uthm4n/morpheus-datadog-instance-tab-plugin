@@ -162,6 +162,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 			} else {
 				// Store objects from the response payload
 				def baseHost = json.host_list[0]
+				def hostId = baseHost.id
 				def status = baseHost.up
 				def agentVersion = baseHost.meta.agent_version
 				def checks = 0
@@ -198,6 +199,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				// Set the values of the HashMap object (defined on line #51)
 				// that will be used to populate the HTML template
 				dataDogPayload.put("id", instance.id)
+				dataDogPayload.put("hostId", hostId)
 				dataDogPayload.put("name", normalizedInstanceName)
 				dataDogPayload.put("apps", apps)
 				dataDogPayload.put("muteStatus", muteStatus)
@@ -208,7 +210,8 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				dataDogPayload.put("cpuCores", cpuCores)
 				dataDogPayload.put("logicalProcessors", logicalProcessors)
 				dataDogPayload.put("operatingSystem", operatingSystem)
-				dataDogPayload.put("memory", memory)
+				def formattedMemory = memory.toInteger()/1000000000
+				dataDogPayload.put("memory", formattedMemory.round(2))
 				dataDogPayload.put("platformDetails", platformDetails)
 				dataDogPayload.put("cpuDetails", cpuDetails)
 				dataDogPayload.put("memoryDetails", memoryDetails)

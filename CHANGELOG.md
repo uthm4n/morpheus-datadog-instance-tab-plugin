@@ -1,5 +1,12 @@
 ## UNRELEASED
 
+## 0.1.0 (April 3, 2024)
+
+CHANGES:
+
+* Updates to the "Open Host Dashboard" button to now utilize the ID of the DataDog host instead of the hostname.
+* Updates to the system info section to now display the memory amount in Gigabytes instead of Kilobytes.
+
 ## 0.0.9 (March 26, 2024)
 
 CHANGES:
