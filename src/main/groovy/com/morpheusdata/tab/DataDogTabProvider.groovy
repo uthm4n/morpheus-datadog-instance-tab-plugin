@@ -182,6 +182,16 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				def cpuCores = gohaidata.cpu.cpu_cores
 				def logicalProcessors = gohaidata.cpu.cpu_logical_processors
 				def memory = gohaidata.memory.total
+				try {
+					Integer.parseInt(memory)
+				} catch(NumberFormatException ex) {
+				    if(memory.isNumber()) {                                                     
+				        memory = memory.toLong()
+				    } else {                                                                   	 
+				        memory = gohaidata.memory.total.replaceAll("[A-Za-z]", "").toLong() 		      // assume value has a unit symbol appended e.g. "34359738368234kB" and convert to Long
+				    }
+				}
+				def formattedMemory = (memory/100000000).round(2)  
 				def operatingSystem = gohaidata.platform.os
 				def cpuDetails = gohaidata.cpu
 				def platformDetails = gohaidata.platform
@@ -210,7 +220,6 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				dataDogPayload.put("cpuCores", cpuCores)
 				dataDogPayload.put("logicalProcessors", logicalProcessors)
 				dataDogPayload.put("operatingSystem", operatingSystem)
-				def formattedMemory = memory.toInteger()/1000000000
 				dataDogPayload.put("memory", formattedMemory.round(2))
 				dataDogPayload.put("platformDetails", platformDetails)
 				dataDogPayload.put("cpuDetails", cpuDetails)
