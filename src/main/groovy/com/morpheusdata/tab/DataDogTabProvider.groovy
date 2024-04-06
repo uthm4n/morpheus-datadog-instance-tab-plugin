@@ -191,7 +191,7 @@ class DataDogTabProvider extends AbstractInstanceTabProvider {
 				        memory = gohaidata.memory.total.replaceAll("[A-Za-z]", "").toLong() 		      // assume value has a unit symbol appended e.g. "34359738368234kB" and convert to Long
 				    }
 				}
-				def formattedMemory = (memory/100000000).round(2)  
+				def formattedMemory = (memory/1000000000).round(2)  
 				def operatingSystem = gohaidata.platform.os
 				def cpuDetails = gohaidata.cpu
 				def platformDetails = gohaidata.platform
